@@ -2,9 +2,11 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.limiter import limiter
+from app.routers import accounts, oidc
 
 # Single source for the human-facing version, reused by GET /version below.
 APP_VERSION = "0.1.0"
@@ -18,6 +20,15 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Browser/Custom-Tab session for the interactive login step of the auth-code flow. `https_only`
+# tracks the HTTPS deploy flag so the cookie is Secure in production and usable over http locally.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.secret_key,
+    https_only=settings.hsts_enabled,
+    same_site="lax",
+)
 
 # CORS: bearer-token clients + the OIDC discovery/JWKS endpoints need to be broadly reachable;
 # credentials off (incompatible with wildcard origins and unnecessary for token auth).
@@ -41,8 +52,8 @@ async def security_headers(request: Request, call_next) -> Response:
     return response
 
 
-# NOTE: OIDC endpoints (/authorize, /token, /.well-known/jwks.json, /.well-known/openid-configuration,
-# login/consent, register/refresh/revoke) land in the next increment — see BROKER.md Phase 2 / 2a.
+app.include_router(accounts.router)
+app.include_router(oidc.router)
 
 
 @app.get("/health", tags=["health"])
