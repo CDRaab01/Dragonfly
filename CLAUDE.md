@@ -132,11 +132,13 @@ visibility) or version reads and launch intents silently fail.
 
 ## Open items
 - [x] ~~Confirm package names~~ — done, see the registry table.
-- [ ] Decide if settings are truly shared to siblings (ContentProvider) or Dragonfly-local only.
-      (v1 built Dragonfly-local; nothing consumes shared settings yet.)
-- [ ] Same signing key across suite? Each app currently commits its own "stable" keystore
-      (Dragonfly: `dragonfly-debug.keystore`, alias `dragonfly`, password `dragonfly01` —
-      Spotter/Cookbook convention). Required before signature-permission sharing.
+- [x] ~~Decide if settings are shared to siblings~~ → YES: Dragonfly becomes the suite's
+      config & identity broker. **Plan of record: [BROKER.md](BROKER.md)** (decided 2026-07-02:
+      signature-permission ContentProvider + SSO in scope, SSO shape gated). Supersedes the two
+      old open items below.
+- [x] ~~Same signing key across suite?~~ → YES, required by the broker's signature permission;
+      BROKER.md Phase 0 is the migration plan (secret suite key, guard-pin updates, one-time
+      reinstall of all five apps).
 - [ ] Set up Tailscale Serve on the Dragonfly server + record the MagicDNS manifest URL here
       (the app's Settings → Self-host base URL; empty = self-host source unavailable).
 - [ ] Who generates the self-host manifest — CI step vs manual.
