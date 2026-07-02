@@ -1,0 +1,98 @@
+package com.dragonfly.update
+
+import com.dragonfly.net.GitHubAsset
+import com.dragonfly.net.downloadUrl
+import com.dragonfly.settings.UpdateSource
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+
+class ReleaseResolverTest {
+
+    // --- version.json ---
+
+    @Test
+    fun `parses full version json`() {
+        val parsed = ReleaseResolver.parseVersionJson(
+            """{"versionCode": 42, "versionName": "1.4.2", "sha256": "abc123", "minSdk": 26}"""
+        )
+        assertEquals(VersionJson(42, "1.4.2", "abc123", 26), parsed)
+    }
+
+    @Test
+    fun `parses minimal version json and ignores unknown keys`() {
+        val parsed = ReleaseResolver.parseVersionJson(
+            """{"versionCode": 7, "versionName": "0.9.0", "builtBy": "ci"}"""
+        )
+        assertEquals(VersionJson(7, "0.9.0", null, null), parsed)
+    }
+
+    @Test
+    fun `version json without versionCode fails`() {
+        assertFailsWith<Exception> {
+            ReleaseResolver.parseVersionJson("""{"versionName": "1.0.0"}""")
+        }
+    }
+
+    // --- manifest.json (schema from CLAUDE.md) ---
+
+    @Test
+    fun `parses the documented manifest schema`() {
+        val manifest = ReleaseResolver.parseManifest(
+            """
+            {
+              "spotter":   { "versionCode": 42, "versionName": "1.4.2", "apkUrl": "https://x/spotter.apk", "sha256": "aa", "minSdk": 26 },
+              "plate":     { "versionCode": 30, "versionName": "1.2.0", "apkUrl": "https://x/plate.apk", "sha256": "bb" }
+            }
+            """.trimIndent()
+        )
+        assertEquals(2, manifest.size)
+        assertEquals(42, manifest.getValue("spotter").versionCode)
+        assertEquals(26, manifest.getValue("spotter").minSdk)
+        assertEquals("https://x/plate.apk", manifest.getValue("plate").apkUrl)
+        assertNull(manifest.getValue("plate").minSdk)
+    }
+
+    // --- asset selection ---
+
+    private fun asset(name: String, id: Long = 1) =
+        GitHubAsset(id = id, name = name, browserDownloadUrl = "https://github.com/dl/$name")
+
+    @Test
+    fun `picks apk and version json assets case-insensitively`() {
+        val assets = listOf(asset("Spotter-1.4.2.APK", 10), asset("VERSION.JSON", 11), asset("notes.txt", 12))
+        assertEquals(10, ReleaseResolver.pickApkAsset(assets)?.id)
+        assertEquals(11, ReleaseResolver.pickVersionJsonAsset(assets)?.id)
+    }
+
+    @Test
+    fun `missing assets return null`() {
+        val assets = listOf(asset("notes.txt"))
+        assertNull(ReleaseResolver.pickApkAsset(assets))
+        assertNull(ReleaseResolver.pickVersionJsonAsset(assets))
+    }
+
+    @Test
+    fun `download url switches to the api asset endpoint with a pat`() {
+        val a = asset("app.apk", id = 99)
+        assertEquals("https://github.com/dl/app.apk", a.downloadUrl("CDRaab01/Spotter", usePat = false))
+        assertEquals(
+            "https://api.github.com/repos/CDRaab01/Spotter/releases/assets/99",
+            a.downloadUrl("CDRaab01/Spotter", usePat = true),
+        )
+    }
+
+    // --- state diff ---
+
+    private fun latest(code: Long) = LatestRelease(code, "x", "https://x/app.apk", "aa", source = UpdateSource.GITHUB)
+
+    @Test
+    fun `state matrix follows versionCode`() {
+        assertEquals(AppState.ERROR, ReleaseResolver.stateFor(1, null))
+        assertEquals(AppState.NOT_INSTALLED, ReleaseResolver.stateFor(null, latest(5)))
+        assertEquals(AppState.UPDATE_AVAILABLE, ReleaseResolver.stateFor(4, latest(5)))
+        assertEquals(AppState.UP_TO_DATE, ReleaseResolver.stateFor(5, latest(5)))
+        assertEquals(AppState.UP_TO_DATE, ReleaseResolver.stateFor(6, latest(5)))
+    }
+}
