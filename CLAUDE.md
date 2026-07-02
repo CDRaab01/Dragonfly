@@ -140,21 +140,43 @@ visibility) or version reads and launch intents silently fail.
 - [ ] Set up Tailscale Serve on the Dragonfly server + record the MagicDNS manifest URL here
       (the app's Settings → Self-host base URL; empty = self-host source unavailable).
 - [ ] Who generates the self-host manifest — CI step vs manual.
-- [x] ~~Add the `version.json` upload step to each sibling's release workflow~~ — done
-      2026-07-02 across the suite (schema: `{"versionCode", "versionName", "sha256", "minSdk"}`):
-      Spotter `release.yml`, Plate + Cookbook `ci.yml` publish jobs, Hawksnest
-      `android-release.yml` (which previously only uploaded a CI artifact — it now publishes a
-      real GitHub Release tagged `android-v0.1.N` so `releases/latest` works). Existing releases
-      predate the asset; each app needs one new release cut before its GitHub check goes green.
-- [x] ~~GitHub Actions CI + release workflow~~ — `.github/workflows/ci.yml`: unit tests +
-      assembleDebug on push/PR (Pulse checked out as sibling), signed release APK +
-      `version.json` published on `v*` tags (Cookbook pattern; stable-key fallback when the
-      KEYSTORE_* secrets are absent).
+- [x] ~~`version.json` in releases~~ + [x] ~~automatic releases across the suite~~ — done
+      2026-07-02. Every app now auto-publishes a signed GitHub Release (+ `version.json`:
+      `{"versionCode", "versionName", "sha256", "minSdk"}`) on **any push to `main` that touches
+      `android/**`** — shipping to devices is just merging to main. See "Release automation" below.
 - [ ] Push to GitHub (CDRaab01/Dragonfly) — needs the human's credentials.
 - [ ] Dashboard v2 candidates (out of v1 scope): live service status from the server stack
       (Plex, Cookbook server, etc.).
 
 ---
+
+## Release automation (suite-wide, 2026-07-02)
+
+Every app in the suite auto-releases so Dragonfly's update channel stays current with zero manual
+steps. **Trigger:** a push to `main` that changes `android/**` (or the release workflow itself).
+A server-only, docs, or CI-only commit does **not** cut a release, so devices aren't nudged with
+identical-code "updates".
+
+**Each release run:** runs unit tests (gating) → builds a signed release APK (CI release key when
+the `KEYSTORE_*` secrets are set, else the committed stable key) → derives the version → writes
+`version.json` → publishes a GitHub Release.
+
+**Versioning:** `versionCode` = **epoch minutes** (`$(( $(date +%s) / 60 ))`) — monotonic across
+workflow changes and always far above any prior run-number-based code, so a fresh release never
+reads as a downgrade to Android or the hub. (A per-workflow `github.run_number` was rejected: a
+new workflow file resets it to 1, which would go *backwards* and collide with old tags.)
+`versionName` = the app's `major.minor` from `build.gradle.kts` + the **commit count**
+(`git rev-list --count HEAD`, so the release checkout uses `fetch-depth: 0`), e.g. Spotter
+`1.1.132`, Cookbook `0.3.22`. Readable, monotonic, and clear of the old low-numbered tags. To bump
+major/minor, edit the default `versionName` in `build.gradle.kts` (the workflow reads it via
+locale-safe `sed`). versionCode and versionName are intentionally different counters — versionCode
+is the machine-comparison field, versionName the human label (standard Android split).
+
+**Workflow files:** `release.yml` in Spotter/Plate/Cookbook/Dragonfly; `android-release.yml` in
+Hawksnest (tags `android-vX.Y.Z` to stay clear of its web `v*` releases). The old tag-triggered
+release jobs were removed from the `ci.yml`s (now push/PR tests + debug build only). A
+`workflow_dispatch` button remains on each as a manual escape hatch. Cookbook + Dragonfly release
+jobs check out the sibling Pulse repo for the composite build.
 
 ## Build log (2026-07-02) — v0.1.0 built
 
