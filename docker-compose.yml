@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    # Credentials default to dragonfly_id for local use; override via a root .env to rotate.
+    # Must stay in sync with DATABASE_URL below (same variables).
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dragonfly_id}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dragonfly_id}
+      POSTGRES_DB: ${POSTGRES_DB:-dragonfly_id}
+    # Host port 5435: Spotter owns 5432, Plate 5433, Cookbook 5434 on this host.
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dragonfly_id} -d ${POSTGRES_DB:-dragonfly_id}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      # Reach Postgres over the compose network; overrides DATABASE_URL from .env.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dragonfly_id}:${POSTGRES_PASSWORD:-dragonfly_id}@db:5432/${POSTGRES_DB:-dragonfly_id}
+      GIT_SHA: ${GIT_SHA:-unknown}
+      BUILT_AT: ${BUILT_AT:-unknown}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Host port 8004: 8000 Spotter, 8001 Plate, 8002 posterizarr, 8003 Cookbook are taken. The
+    # container still listens on 8000 internally, so cloudflared (server:8000) is unaffected.
+    ports:
+      - "127.0.0.1:8004:8000"
+
+  # Public entrypoint. Only started with: docker compose --profile tunnel up -d
+  # Point the Cloudflare public hostname (id.dragonflymedia.org) at http://server:8000.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run --token ${TUNNEL_TOKEN:-}
+    depends_on:
+      - server
+    profiles:
+      - tunnel
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "localhost:2000", "ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  pgdata:
