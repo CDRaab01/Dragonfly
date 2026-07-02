@@ -181,11 +181,15 @@ together — Dragonfly is currently Android-only, so this adds the first server 
 - A sibling with no local session asks Dragonfly for a short-lived suite **access** token, then
   calls its own `POST /auth/suite` to exchange it for a local session, stored in its existing
   token store — its `TokenRefreshAuthenticator` machinery is untouched.
-- **DECISION (recommended): native delegation over a signature-gated bound `Service`** in
-  Dragonfly that mints/returns a fresh suite access token — *not* a web/Custom-Tab OAuth flow.
-  The shared suite signing key already establishes trust between the apps, so a browser round-trip
-  and PKCE add ceremony without benefit here; native is simpler and works offline against the
-  tailnet. (A provider is the wrong tool for minting tokens — use a `Service`/`Messenger`.)
+- **DECISION (user, 2026-07-02): standard OAuth2 / OIDC with PKCE.** `dragonfly-id` is a real
+  OIDC provider; each app (and Dragonfly) is a public client using the authorization-code + PKCE
+  flow via a Custom Tab / `AppAuth`. Chosen over the native-Service shortcut for standards
+  correctness and to keep web/third-party clients possible later. Each Android app registers a
+  redirect URI (e.g. `com.spotter:/oauth2redirect`); the returned suite tokens are exchanged at
+  the app's own `POST /auth/suite`.
+- **Implementation: use a vetted OIDC library, do NOT hand-roll.** Server side, build on
+  **Authlib** (authorization-code + PKCE + JWKS) rather than writing token/PKCE crypto by hand —
+  this is security-critical. Android side, use **AppAuth-Android** for the PKCE flow.
 - **Fallback (mandatory, Phase-1 ethos):** Dragonfly absent / not same-signed / no suite session
   ⇒ the sibling shows its own login screen and authenticates directly, exactly as today.
 
@@ -210,13 +214,13 @@ app-by-app at your pace with zero downtime.
 - **2e (optional, later)** — retire per-app password endpoints once everything runs on suite auth
   (keep a break-glass path).
 
-### Open decisions to confirm before 2a
-1. **Delegation mechanism** — native signature-gated `Service` (recommended) vs. web OAuth
-   (Custom Tabs + PKCE). Shapes all of 2c and the client work.
-2. **Deployment** — new `id.dragonflymedia.org` (needs a Caddy route + Cloudflare hostname + a
-   `dragonfly` self-hosted runner). Confirm the subdomain and that the DragonflyMedia host will
-   run one more container.
-3. **Repo** — identity server in the Dragonfly repo `server/` (recommended) vs. its own repo.
+### Decisions
+1. **Delegation mechanism** — ✅ OAuth2/OIDC with PKCE (Authlib server, AppAuth-Android client).
+2. **Repo** — ✅ identity server in the Dragonfly repo under `server/`.
+3. **Deployment** (confirm at deploy time, not needed to start 2a) — new
+   `id.dragonflymedia.org`: a Caddy route + Cloudflare hostname + a `dragonfly-id` self-hosted
+   runner on the DragonflyMedia host (one more container). The service code is host/subdomain
+   agnostic, so 2a can be built and tested locally first.
 
 ---
 
