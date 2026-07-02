@@ -78,6 +78,14 @@ door. Before step 5, backing out = restoring the old per-app secrets + reverting
 
 ## Phase 1 — Connection-config broker (client-only, no server changes)
 
+> **Status (2026-07-02): IMPLEMENTED.** Dragonfly ships `SuiteConfigProvider` (signature-permission,
+> authority `com.dragonfly.suiteconfig`) + a "Managed app servers" settings UI. Spotter, Plate, and
+> Cookbook read `server_base_url` on startup via a `SuiteConfigReader` feeding their existing
+> `AppPreferences.serverUrl` seam, with the mandatory fallback (absent hub / permission denied /
+> blank ⇒ keep local). All four build green and auto-released. **Hawksnest deferred** — it targets a
+> Home Assistant instance, not a suite FastAPI backend, so its URL semantics need their own design.
+> On-device verification pending: set a URL in Dragonfly → confirm a sibling adopts it.
+
 **What it is:** Dragonfly exposes a read-only `ContentProvider` with each app's connection
 config; each sibling reads it on launch and feeds its existing runtime-URL seam. One place to
 repoint the suite (e.g. Cloudflare hostname → Tailscale MagicDNS) — flip it in Dragonfly,
