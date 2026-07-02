@@ -40,6 +40,11 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.setSelfHostBaseUrl(url)
     }
 
+    /** Broker-managed server URL for one app; blank clears it (sibling falls back to its own). */
+    fun setAppServerUrl(appKey: String, url: String) = viewModelScope.launch {
+        settingsRepository.setAppServerUrl(appKey, url)
+    }
+
     fun setCheckInterval(interval: CheckInterval) = viewModelScope.launch {
         settingsRepository.setCheckInterval(interval)
         reschedule()

@@ -7,6 +7,12 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Suite config broker (BROKER.md Phase 1): only apps signed with the same suite key may read
+         Dragonfly's SuiteConfigProvider. -->
+    <permission
+        android:name="com.dragonfly.permission.READ_SUITE_CONFIG"
+        android:protectionLevel="signature" />
+
     <!-- Package visibility (API 30+): Dragonfly reads siblings' installed versions and builds
          their launch intents, so each managed package must be declared here. -->
     <queries>
@@ -39,6 +45,13 @@
         <receiver
             android:name=".install.InstallResultReceiver"
             android:exported="false" />
+
+        <!-- Suite connection-config broker, readable only by same-signed suite apps. -->
+        <provider
+            android:name=".suiteconfig.SuiteConfigProvider"
+            android:authorities="com.dragonfly.suiteconfig"
+            android:exported="true"
+            android:readPermission="com.dragonfly.permission.READ_SUITE_CONFIG" />
 
         <!-- WorkManager on-demand initialization: Hilt supplies the worker factory via
              DragonflyApp's Configuration.Provider, so the default initializer must not run. -->

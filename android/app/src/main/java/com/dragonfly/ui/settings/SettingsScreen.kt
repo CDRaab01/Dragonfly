@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dragonfly.BuildConfig
+import com.dragonfly.registry.AppRegistry
 import com.dragonfly.settings.CheckInterval
 import com.dragonfly.settings.UpdateSource
 import design.pulse.ui.components.Caption
@@ -129,6 +130,29 @@ fun SettingsScreen(
                                 text = "Save",
                                 onClick = { viewModel.setSelfHostBaseUrl(url) },
                                 compact = true,
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                PanelCard(Modifier.fillMaxWidth()) {
+                    Column {
+                        SectionHeader("Managed app servers")
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Set an app's server URL here and every install of it in the suite " +
+                                "follows. Leave blank to let the app use its own setting.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        AppRegistry.apps.filterNot { it.isSelf }.forEach { app ->
+                            Spacer(Modifier.height(12.dp))
+                            AppServerRow(
+                                displayName = app.displayName,
+                                saved = settings.perAppServerUrl[app.key].orEmpty(),
+                                onSave = { viewModel.setAppServerUrl(app.key, it) },
                             )
                         }
                     }
@@ -238,5 +262,27 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AppServerRow(
+    displayName: String,
+    saved: String,
+    onSave: (String) -> Unit,
+) {
+    var text by rememberSaveable(saved) { mutableStateOf(saved) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { text = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("$displayName server URL") },
+        placeholder = { Text("https://$displayName.example.org/".lowercase()) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+    )
+    if (text != saved) {
+        Spacer(Modifier.height(8.dp))
+        PulseButton(text = "Save", onClick = { onSave(text) }, compact = true)
     }
 }

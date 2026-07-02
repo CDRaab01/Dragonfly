@@ -100,6 +100,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Clear a stuck/unwanted download-or-install so the card can be retried. */
+    fun resetInstall(appKey: String) {
+        flowManager.reset(appKey)
+    }
+
     fun launchApp(appKey: String) {
         val status = statuses.value.firstOrNull { it.app.key == appKey } ?: return
         val intent = installedApps.launchIntent(status.app.packageName)

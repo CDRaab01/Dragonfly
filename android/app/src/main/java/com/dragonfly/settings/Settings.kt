@@ -13,9 +13,17 @@ data class SettingsSnapshot(
     val selfHostBaseUrl: String = "",
     val checkInterval: CheckInterval = CheckInterval.ON_LAUNCH,
     val wifiOnly: Boolean = false,
+    /**
+     * Per-app server base URL the suite broker hands to siblings (BROKER.md Phase 1). Empty/absent
+     * ⇒ the broker has no opinion and the sibling keeps its own configured URL.
+     */
+    val perAppServerUrl: Map<String, String> = emptyMap(),
 ) {
     /** Effective source for one app: per-app override, else the global default. */
     fun sourceFor(appKey: String): UpdateSource = perAppSource[appKey] ?: globalSource
+
+    /** Broker-managed server URL for an app, or null if unset (sibling falls back to its own). */
+    fun serverUrlFor(appKey: String): String? = perAppServerUrl[appKey]?.takeIf { it.isNotBlank() }
 
     val selfHostConfigured: Boolean get() = selfHostBaseUrl.isNotBlank()
 

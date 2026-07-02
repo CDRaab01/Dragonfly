@@ -111,6 +111,7 @@ fun HomeScreen(
                     onLaunch = { viewModel.launchApp(card.status.app.key) },
                     onUpdate = { viewModel.updateApp(card.status.app.key) },
                     onOpen = { onOpenApp(card.status.app.key) },
+                    onCancel = { viewModel.resetInstall(card.status.app.key) },
                 )
             }
         }
@@ -178,6 +179,7 @@ private fun AppCard(
     onLaunch: () -> Unit,
     onUpdate: () -> Unit,
     onOpen: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     val colors = DragonflyTheme.colors
     val status = card.status
@@ -223,7 +225,11 @@ private fun AppCard(
             }
             if (busy) {
                 Spacer(Modifier.height(12.dp))
-                PipelineProgress(card.phase)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { PipelineProgress(card.phase) }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = onCancel) { Text("Cancel") }
+                }
             }
             val showLaunch = status.installedVersionCode != null && !status.app.isSelf
             val showUpdate = !busy &&

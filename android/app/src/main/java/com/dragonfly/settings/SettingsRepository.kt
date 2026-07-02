@@ -27,6 +27,7 @@ class SettingsRepository @Inject constructor(
         val checkInterval = stringPreferencesKey("check.interval")
         val wifiOnly = booleanPreferencesKey("downloads.wifi_only")
         fun appSource(appKey: String) = stringPreferencesKey("source.app.$appKey")
+        fun appServerUrl(appKey: String) = stringPreferencesKey("server_url.app.$appKey")
     }
 
     val snapshots: Flow<SettingsSnapshot> = context.settingsDataStore.data.map { prefs ->
@@ -38,6 +39,9 @@ class SettingsRepository @Inject constructor(
             selfHostBaseUrl = prefs[Keys.selfHostBaseUrl].orEmpty(),
             checkInterval = prefs[Keys.checkInterval].toEnum(CheckInterval.ON_LAUNCH),
             wifiOnly = prefs[Keys.wifiOnly] ?: false,
+            perAppServerUrl = AppRegistry.apps.mapNotNull { app ->
+                prefs[Keys.appServerUrl(app.key)]?.takeIf { it.isNotBlank() }?.let { app.key to it }
+            }.toMap(),
         )
     }
 
@@ -51,6 +55,13 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setSelfHostBaseUrl(url: String) = edit { it[Keys.selfHostBaseUrl] = url.trim() }
+
+    /** Blank clears the broker's opinion so the sibling falls back to its own configured URL. */
+    suspend fun setAppServerUrl(appKey: String, url: String) = edit {
+        val trimmed = url.trim()
+        if (trimmed.isEmpty()) it.remove(Keys.appServerUrl(appKey)) else it[Keys.appServerUrl(appKey)] = trimmed
+    }
+
     suspend fun setCheckInterval(interval: CheckInterval) = edit { it[Keys.checkInterval] = interval.name }
     suspend fun setWifiOnly(enabled: Boolean) = edit { it[Keys.wifiOnly] = enabled }
 
