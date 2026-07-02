@@ -84,7 +84,9 @@ door. Before step 5, backing out = restoring the old per-app secrets + reverting
 > `AppPreferences.serverUrl` seam, with the mandatory fallback (absent hub / permission denied /
 > blank ⇒ keep local). All four build green and auto-released. **Hawksnest deferred** — it targets a
 > Home Assistant instance, not a suite FastAPI backend, so its URL semantics need their own design.
-> On-device verification pending: set a URL in Dragonfly → confirm a sibling adopts it.
+> **On-device VERIFIED 2026-07-02:** set a server URL for Cookbook in Dragonfly, relaunched
+> Cookbook, and it adopted the value (the read runs in `App.onCreate`, so a process restart is
+> required to pick up a change).
 
 **What it is:** Dragonfly exposes a read-only `ContentProvider` with each app's connection
 config; each sibling reads it on launch and feeds its existing runtime-URL seam. One place to
