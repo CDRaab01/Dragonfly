@@ -140,11 +140,16 @@ visibility) or version reads and launch intents silently fail.
 - [ ] Set up Tailscale Serve on the Dragonfly server + record the MagicDNS manifest URL here
       (the app's Settings → Self-host base URL; empty = self-host source unavailable).
 - [ ] Who generates the self-host manifest — CI step vs manual.
-- [ ] Add the `version.json` upload step to each sibling's release workflow
-      (schema: `{"versionCode", "versionName", "sha256", "minSdk"}`; Dragonfly refuses to
-      guess versions from tags and shows "release missing version.json" until this ships).
-- [ ] GitHub Actions CI (unit tests + assembleDebug, Pulse checked out as sibling — clone
-      Cookbook's workflow) + release workflow publishing APK + version.json.
+- [x] ~~Add the `version.json` upload step to each sibling's release workflow~~ — done
+      2026-07-02 across the suite (schema: `{"versionCode", "versionName", "sha256", "minSdk"}`):
+      Spotter `release.yml`, Plate + Cookbook `ci.yml` publish jobs, Hawksnest
+      `android-release.yml` (which previously only uploaded a CI artifact — it now publishes a
+      real GitHub Release tagged `android-v0.1.N` so `releases/latest` works). Existing releases
+      predate the asset; each app needs one new release cut before its GitHub check goes green.
+- [x] ~~GitHub Actions CI + release workflow~~ — `.github/workflows/ci.yml`: unit tests +
+      assembleDebug on push/PR (Pulse checked out as sibling), signed release APK +
+      `version.json` published on `v*` tags (Cookbook pattern; stable-key fallback when the
+      KEYSTORE_* secrets are absent).
 - [ ] Push to GitHub (CDRaab01/Dragonfly) — needs the human's credentials.
 - [ ] Dashboard v2 candidates (out of v1 scope): live service status from the server stack
       (Plex, Cookbook server, etc.).
