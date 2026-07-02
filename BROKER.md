@@ -136,44 +136,87 @@ every app follows.
 
 ---
 
-## Phase 2 — Shared login / SSO (GATED: pick the shape first)
+## Phase 2 — Suite SSO via a Dragonfly identity server
 
-**The structural problem:** SSO needs one authentication authority; today there are five
-co-equal ones (each app's server owns its own `users` table + JWTs, federated only by email
-via server-side `CROSS_APP_SECRET`). A client-side broker cannot fix this alone — the phone
-can't hold a secret that mints server-trusted tokens (APKs are decompilable).
+> **Gate resolved (user, 2026-07-02): SHAPE 1 — build a Dragonfly identity server.** Chosen over
+> the lighter UX-only option because the user wants to move toward a real single-identity
+> architecture (headroom for multi-user / central revocation / web SSO later), accepting the new
+> always-on service and the deliberate exception to "no shared backend components". Shapes 2 & 3
+> are recorded in git history if we ever need to reconsider.
 
-**The three viable shapes (pick ONE before any Phase 2 code):**
+**Structural premise:** SSO needs one authentication authority; today there are five co-equal ones
+(each app owns its `users` table + JWTs, federated only by email via server-side
+`CROSS_APP_SECRET`). Phase 2 introduces that authority as a new service and migrates the apps to
+trust it — *additively and behind flags*, so every app keeps working throughout.
 
-1. **Dragonfly identity server (recommended if SSO is truly wanted).** A small FastAPI auth
-   service (this repo, `server/`, suite conventions: Docker Compose on the DragonflyMedia
-   host, `/health`+`/version`, runner deploys). OIDC-lite: password login → RS256 JWTs;
-   public JWKS endpoint; each app server adds "also accept suite-issued tokens" (verify via
-   JWKS, map identity by email) alongside its existing auth during migration. Apps' clients
-   delegate login to Dragonfly (app-to-app intent, or Custom Tab). True SSO; the cost is a
-   new always-on service and a deliberate exception to "no shared components".
-2. **Elect an existing server (e.g. Spotter's) as identity provider.** No new service, same
-   token work — but couples every app's availability to Spotter's server and muddies each
-   repo's single-purpose design. Cheaper, uglier long-term.
-3. **UX-only credential convenience (not real SSO).** Dragonfly stores per-app refresh
-   tokens after you log in once per app; siblings pull their token from the broker instead of
-   showing a login screen. No central authority, no server changes, fully decoupled — but the
-   accounts stay five separate accounts, and password changes still happen five times.
+### New component: `dragonfly-id` (identity server)
+A small FastAPI service following suite conventions (Docker Compose on the DragonflyMedia host,
+SQLAlchemy 2.0 async + Alembic, `/health`+`/version`, self-hosted-runner redeploy, Cloudflare
+subdomain). **Lives in the Dragonfly repo under `server/`** (the hub owns identity; keeps them
+together — Dragonfly is currently Android-only, so this adds the first server code here).
 
-**Recommendation:** shape 1 — it's the only real SSO, and the identity service is small and
-suite-owned. But it consciously reverses the "no shared backend components" rule, so it needs
-an explicit yes at this gate. If that reversal feels wrong when the moment comes, shape 3
-delivers most of the daily convenience with zero architectural cost.
+- **Identity model:** `users(id, email UNIQUE, name, password_hash [argon2id], created_at, reset
+  fields)`. One row per person; for now that's just you.
+- **Tokens:** asymmetric **RS256** access + refresh JWTs. Public keys served at
+  `/.well-known/jwks.json` so app servers validate signatures with the *public* key and never
+  share a secret. Claims: `iss` (the id server), `aud` (`suite`), `sub` (user id), `email`,
+  `exp`. Key id (`kid`) in the header; rotation supported by publishing multiple JWKS keys.
+- **Endpoints:** `register`, `login`, `refresh`, `logout`/revoke, `forgot`/`reset`, `GET /me`,
+  JWKS. Rate limits + security headers mirroring Spotter's auth. Secrets/keys via env, never
+  committed.
 
-**Sketch for shape 1 (only after the gate):**
-- 2a: identity server (register/login/refresh, JWKS, argon2, rate limits mirroring Spotter's)
-  + account linking by email; Dragonfly app gets the login UI.
-- 2b: each app server accepts suite JWTs (JWKS validation, email→local-user mapping,
-  feature-flagged; existing logins keep working).
-- 2c: sibling clients delegate to Dragonfly for login; store returned tokens in their existing
-  auth stores (their `TokenRefreshAuthenticator` machinery is untouched).
-- 2d (optional, later): disable per-app password endpoints once everything runs on suite auth.
-- Each sub-phase exits with tests green + one app end-to-end before the next starts.
+### Trust integration in each app server (2b — additive, flagged)
+- Config `SUITE_JWKS_URL` (+ expected `iss`/`aud`). **Unset ⇒ the app behaves exactly as today**
+  (per-app login only). Set ⇒ the app also accepts suite tokens.
+- New endpoint `POST /auth/suite`: accept a suite **access** token → verify via cached JWKS →
+  extract email → find-or-create the local user by email (the existing `get_cross_app_user`
+  email-federation pattern is the reference) → return **that app's own** session tokens. So the
+  app's entire downstream session model is unchanged; the suite token only appears at login.
+- Dual-auth during migration: per-app password login keeps working the whole time. Nothing is a
+  hard cutover.
+
+### Android delegation (2c)
+- **Dragonfly owns the suite session** (holds the suite refresh token in its encrypted store, the
+  same one the GitHub PAT uses). Login UI lives in Dragonfly.
+- A sibling with no local session asks Dragonfly for a short-lived suite **access** token, then
+  calls its own `POST /auth/suite` to exchange it for a local session, stored in its existing
+  token store — its `TokenRefreshAuthenticator` machinery is untouched.
+- **DECISION (recommended): native delegation over a signature-gated bound `Service`** in
+  Dragonfly that mints/returns a fresh suite access token — *not* a web/Custom-Tab OAuth flow.
+  The shared suite signing key already establishes trust between the apps, so a browser round-trip
+  and PKCE add ceremony without benefit here; native is simpler and works offline against the
+  tailnet. (A provider is the wrong tool for minting tokens — use a `Service`/`Messenger`.)
+- **Fallback (mandatory, Phase-1 ethos):** Dragonfly absent / not same-signed / no suite session
+  ⇒ the sibling shows its own login screen and authenticates directly, exactly as today.
+
+### Migration (one-time, single user)
+Register once in Dragonfly (your email + a password) — that becomes the authority. Existing
+per-app accounts **auto-link by email** on first suite login (no password export needed; the old
+per-app hashes stay valid for dual-auth). Because everything is additive + flagged, you migrate
+app-by-app at your pace with zero downtime.
+
+### Sub-phases (each exits with tests green + one app end-to-end before the next)
+- **2a — identity server.** Scaffold `server/` in the Dragonfly repo: model + Alembic, auth
+  endpoints, RS256/JWKS, rate limits, Docker Compose, `/health`+`/version`, CI + runner deploy.
+  Dragonfly Android gets the login UI + suite session store. Exit: register/login/refresh work
+  against the deployed service; JWKS validates.
+- **2b — one app server trusts suite tokens.** Pilot with **Cookbook's** server (youngest, cleanest):
+  `SUITE_JWKS_URL` + `POST /auth/suite` + email find-or-create, fully behind the flag. Exit:
+  a suite token logs into Cookbook's API; flag off = unchanged.
+- **2c — one sibling client delegates login.** Cookbook Android: no session ⇒ pull a suite token
+  from Dragonfly ⇒ `/auth/suite` ⇒ store local session; fallback to its own login otherwise.
+  Exit: fresh Cookbook install signs in with no Cookbook-specific login, via Dragonfly.
+- **2d — roll out** to Spotter + Plate (server + client each), then decide Hawksnest.
+- **2e (optional, later)** — retire per-app password endpoints once everything runs on suite auth
+  (keep a break-glass path).
+
+### Open decisions to confirm before 2a
+1. **Delegation mechanism** — native signature-gated `Service` (recommended) vs. web OAuth
+   (Custom Tabs + PKCE). Shapes all of 2c and the client work.
+2. **Deployment** — new `id.dragonflymedia.org` (needs a Caddy route + Cloudflare hostname + a
+   `dragonfly` self-hosted runner). Confirm the subdomain and that the DragonflyMedia host will
+   run one more container.
+3. **Repo** — identity server in the Dragonfly repo `server/` (recommended) vs. its own repo.
 
 ---
 
@@ -183,7 +226,7 @@ delivers most of the daily convenience with zero architectural cost.
 |---|---|---|---|
 | 0 — key unification | all 5 (workflow pins) + GitHub secrets | secrets in 5 repos; phone reinstall ×5; keystore backup | one-way door |
 | 1 — config broker | Dragonfly (provider+UI) + 4 siblings (small read patch) | none beyond normal updates | low; fallback keeps siblings independent |
-| 2 — SSO | gate first; shape 1 = all 5 servers + clients + new service | shape decision; deploy secrets | high; staged behind flags |
+| 2 — SSO (shape 1) | new `dragonfly-id` service + all app servers + clients | confirm 3 open decisions; new subdomain + runner; register once | high; additive + flagged, staged app-by-app |
 
-Phase 1 is worth shipping even if Phase 2 never happens. Phase 2 must not start until the
-shape is chosen at the gate above.
+Phase 1 is worth shipping even if Phase 2 never happens. Phase 2's shape is decided (identity
+server); confirm the three open decisions above before starting sub-phase 2a.
