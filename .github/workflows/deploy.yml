@@ -40,6 +40,13 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_REF: ${{ inputs.ref }}
           WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+          # Runner service = NETWORK SERVICE; the canonical clone is owned by
+          # the interactive user, so git needs a safe.directory exception or it
+          # fails with "dubious ownership" (bit kidbot's deploys for days).
+          # Env-scoped so the fix travels with the repo, no admin needed.
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: "*"
         run: |
           $ErrorActionPreference = "Stop"
           if ([string]::IsNullOrWhiteSpace($env:DRAGONFLY_DIR)) {
