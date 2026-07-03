@@ -7,6 +7,9 @@ os.environ.setdefault(
 )
 os.environ.setdefault("SECRET_KEY", "test-secret-not-for-production")
 os.environ.setdefault("DB_NULLPOOL", "true")
+# https_only session cookies (hsts_enabled) get dropped over the http test client, which loses the
+# login session before /authorize. Force it off for tests (the live .env carries HSTS_ENABLED=true).
+os.environ.setdefault("HSTS_ENABLED", "false")
 
 import pytest
 import pytest_asyncio
@@ -15,10 +18,14 @@ from httpx import ASGITransport, AsyncClient
 import app.models.oauth  # noqa: F401  register tables on Base
 import app.models.user  # noqa: F401
 from app.database import Base, engine
+from app.config import settings
 from app.limiter import limiter
 from app.main import app
 
 limiter.enabled = False
+# Invite gating is a deploy concern, not under test; disable it so the suite runs regardless of a
+# local server/.env that carries REGISTRATION_INVITE_CODE (otherwise every /register call 403s).
+settings.registration_invite_code = None
 
 
 @pytest.fixture(scope="session")
