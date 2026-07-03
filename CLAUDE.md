@@ -9,7 +9,8 @@
 Since 2026-07-02 the repo has a **fourth job**: `server/` hosts **dragonfly-id**, the suite's OIDC
 identity server (live at https://id.dragonflymedia.org). Dragonfly is the suite's **config &
 identity broker** — the plan of record is [BROKER.md](BROKER.md); the as-built status ledger is
-below ("Broker status").
+below ("Broker status"). Inter-app data links (rules, live surfaces, approved roadmap,
+non-goals) are documented in [CROSS-APP.md](CROSS-APP.md).
 
 > **Naming:** the app is *Dragonfly*; the self-hosted server (the Tailscale node) is referred to as *the Dragonfly server* below. Don't conflate them in code — use `dragonfly` for the app's package/module names and `server`/`selfHost` for the backend.
 
