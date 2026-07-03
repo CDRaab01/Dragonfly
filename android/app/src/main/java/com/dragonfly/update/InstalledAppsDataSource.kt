@@ -5,6 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.os.Build
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -35,20 +39,23 @@ class InstalledAppsDataSource @Inject constructor(
         context.packageManager.getLaunchIntentForPackage(packageName)
 
     /**
-     * The installed app's launcher icon, rasterized to an [ImageBitmap] for Compose. Null when the
-     * app isn't installed. Adaptive icons are drawn with both layers into a square; the UI rounds
-     * the corners. Rasterizing is cheap (one small bitmap) and only runs on refresh.
+     * The app's launcher glyph as a WHITE monochrome [ImageBitmap] for Compose — a small mark shown
+     * to the left of the app name on each hub card. We take the adaptive icon's foreground layer
+     * (the logo shape, without its colored background) and force it white with a SRC_IN filter, so
+     * every app reads consistently. Null when the app isn't installed. Only runs on refresh.
      */
-    fun appIcon(packageName: String, sizePx: Int = 144): ImageBitmap? {
+    fun appIcon(packageName: String, sizePx: Int = 96): ImageBitmap? {
         val drawable = try {
             context.packageManager.getApplicationIcon(packageName)
         } catch (e: PackageManager.NameNotFoundException) {
             return null
         }
+        val glyph = (if (drawable is AdaptiveIconDrawable) drawable.foreground ?: drawable else drawable).mutate()
+        glyph.colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, sizePx, sizePx)
-        drawable.draw(canvas)
+        glyph.setBounds(0, 0, sizePx, sizePx)
+        glyph.draw(canvas)
         return bitmap.asImageBitmap()
     }
 }

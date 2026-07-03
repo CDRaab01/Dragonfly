@@ -189,56 +189,50 @@ private fun AppCard(
 
     PanelCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
         Column {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        status.app.displayName,
-                        style = MaterialTheme.typography.titleMedium,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // White app logo to the left of the name.
+                card.icon?.let { icon ->
+                    Image(
+                        bitmap = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        DataText(
-                            status.installedVersionName ?: "—",
-                            color = if (status.state == AppState.UPDATE_AVAILABLE) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                colors.info.base
-                            },
-                        )
-                        val latest = status.latest
-                        if (latest != null && status.state == AppState.UPDATE_AVAILABLE) {
-                            Text(
-                                "  →  ",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            DataText(latest.versionName, color = colors.warn.base)
-                        }
-                    }
-                    status.note?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Spacer(Modifier.width(10.dp))
                 }
-                Spacer(Modifier.width(12.dp))
-                // Status pill with the app's launcher icon beneath it.
-                Column(horizontalAlignment = Alignment.End) {
-                    StatusPill(status.state)
-                    card.icon?.let { icon ->
-                        Spacer(Modifier.height(8.dp))
-                        Image(
-                            bitmap = icon,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                        )
-                    }
+                Text(
+                    status.app.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                StatusPill(status.state)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                DataText(
+                    status.installedVersionName ?: "—",
+                    color = if (status.state == AppState.UPDATE_AVAILABLE) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        colors.info.base
+                    },
+                )
+                val latest = status.latest
+                if (latest != null && status.state == AppState.UPDATE_AVAILABLE) {
+                    Text(
+                        "  →  ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    DataText(latest.versionName, color = colors.warn.base)
                 }
+            }
+            status.note?.let {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (busy) {
                 Spacer(Modifier.height(12.dp))
