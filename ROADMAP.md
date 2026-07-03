@@ -6,8 +6,7 @@ what BROKER.md started.
 
 ## Finish what's started
 
-1. **Set `DRAGONFLY_DIR`** (Actions variable) so push-to-deploy actually deploys the identity
-   server — it's the only suite backend still hand-deployed. (Human, 2 minutes.)
+1. ~~Set `DRAGONFLY_DIR`~~ — done 2026-07-03; push-to-deploy verified live.
 2. **Self-host update source: build it or delete it.** The Settings field has been "unset by
    default" since v0.1 with no manifest behind it. Building = a small CI step publishing
    `manifest.json` + APKs behind Tailscale Serve. If GitHub Releases has proven sufficient

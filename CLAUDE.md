@@ -153,9 +153,9 @@ visibility) or version reads and launch intents silently fail.
       `android/**`** — shipping to devices is just merging to main. See "Release automation" below.
 - [x] ~~Push to GitHub (CDRaab01/Dragonfly)~~ — done 2026-07-02; direct `git push` works from the
       host (`gh` CLI is not installed there).
-- [ ] Human: set the `DRAGONFLY_DIR` Actions variable (= the canonical clone path) so the
-      push-to-deploy workflow (`deploy.yml`, runner label `dragonfly`) can redeploy dragonfly-id.
-      Until then the identity server is redeployed manually (`deploy/redeploy.ps1`).
+- [x] ~~Set the `DRAGONFLY_DIR` Actions variable~~ — done 2026-07-03; push-to-deploy verified
+      end-to-end (manual dispatch → runner `dragonfly` → redeploy.ps1 → health gate green,
+      public OIDC discovery 200).
 - [ ] Dashboard v2 candidates (out of v1 scope): live service status from the server stack
       (Plex, Cookbook server, etc.).
 
