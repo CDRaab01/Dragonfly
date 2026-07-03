@@ -1,5 +1,6 @@
 package com.dragonfly.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -187,41 +189,56 @@ private fun AppCard(
 
     PanelCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
         Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    status.app.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                StatusPill(status.state)
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                DataText(
-                    status.installedVersionName ?: "—",
-                    color = if (status.state == AppState.UPDATE_AVAILABLE) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        colors.info.base
-                    },
-                )
-                val latest = status.latest
-                if (latest != null && status.state == AppState.UPDATE_AVAILABLE) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "  →  ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        status.app.displayName,
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                    DataText(latest.versionName, color = colors.warn.base)
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        DataText(
+                            status.installedVersionName ?: "—",
+                            color = if (status.state == AppState.UPDATE_AVAILABLE) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                colors.info.base
+                            },
+                        )
+                        val latest = status.latest
+                        if (latest != null && status.state == AppState.UPDATE_AVAILABLE) {
+                            Text(
+                                "  →  ",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            DataText(latest.versionName, color = colors.warn.base)
+                        }
+                    }
+                    status.note?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-            status.note?.let {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Spacer(Modifier.width(12.dp))
+                // Status pill with the app's launcher icon beneath it.
+                Column(horizontalAlignment = Alignment.End) {
+                    StatusPill(status.state)
+                    card.icon?.let { icon ->
+                        Spacer(Modifier.height(8.dp))
+                        Image(
+                            bitmap = icon,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                        )
+                    }
+                }
             }
             if (busy) {
                 Spacer(Modifier.height(12.dp))

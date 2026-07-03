@@ -3,7 +3,11 @@ package com.dragonfly.update
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,4 +33,22 @@ class InstalledAppsDataSource @Inject constructor(
 
     fun launchIntent(packageName: String): Intent? =
         context.packageManager.getLaunchIntentForPackage(packageName)
+
+    /**
+     * The installed app's launcher icon, rasterized to an [ImageBitmap] for Compose. Null when the
+     * app isn't installed. Adaptive icons are drawn with both layers into a square; the UI rounds
+     * the corners. Rasterizing is cheap (one small bitmap) and only runs on refresh.
+     */
+    fun appIcon(packageName: String, sizePx: Int = 144): ImageBitmap? {
+        val drawable = try {
+            context.packageManager.getApplicationIcon(packageName)
+        } catch (e: PackageManager.NameNotFoundException) {
+            return null
+        }
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.draw(canvas)
+        return bitmap.asImageBitmap()
+    }
 }

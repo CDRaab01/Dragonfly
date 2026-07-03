@@ -2,6 +2,7 @@ package com.dragonfly.ui.home
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dragonfly.update.AppState
@@ -12,6 +13,7 @@ import com.dragonfly.update.UpdateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class HomeUiState(
     val cards: List<CardUi> = emptyList(),
@@ -29,6 +32,7 @@ data class HomeUiState(
     data class CardUi(
         val status: AppStatus,
         val phase: UpdateFlowManager.Phase,
+        val icon: ImageBitmap? = null,
     )
 }
 
@@ -43,6 +47,9 @@ class HomeViewModel @Inject constructor(
     private val statuses = MutableStateFlow<List<AppStatus>>(emptyList())
     private val checking = MutableStateFlow(false)
 
+    /** Per-app launcher icons (by app key), refreshed alongside statuses. */
+    private val icons = MutableStateFlow<Map<String, ImageBitmap?>>(emptyMap())
+
     /** One-shot snackbar text; null when consumed. */
     private val _message = MutableStateFlow<String?>(null)
     val message = _message.asStateFlow()
@@ -52,10 +59,14 @@ class HomeViewModel @Inject constructor(
     val needsInstallPermission = _needsInstallPermission.asStateFlow()
 
     val uiState: StateFlow<HomeUiState> =
-        combine(statuses, checking, flowManager.phases) { statusList, isChecking, phases ->
+        combine(statuses, checking, flowManager.phases, icons) { statusList, isChecking, phases, iconMap ->
             HomeUiState(
                 cards = statusList.map {
-                    HomeUiState.CardUi(it, phases[it.app.key] ?: UpdateFlowManager.Phase())
+                    HomeUiState.CardUi(
+                        it,
+                        phases[it.app.key] ?: UpdateFlowManager.Phase(),
+                        iconMap[it.app.key],
+                    )
                 },
                 checking = isChecking,
                 updatesAvailable = statusList.count { it.state == AppState.UPDATE_AVAILABLE },
@@ -77,7 +88,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             checking.value = true
             try {
-                statuses.value = updateRepository.checkAll()
+                val result = updateRepository.checkAll()
+                statuses.value = result
+                icons.value = withContext(Dispatchers.Default) {
+                    result.associate { it.app.key to installedApps.appIcon(it.app.packageName) }
+                }
             } catch (e: Exception) {
                 _message.value = "Check failed: ${e.message ?: "network error"}"
             } finally {
