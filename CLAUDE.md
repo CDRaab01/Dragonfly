@@ -6,6 +6,11 @@
 2. **Shared settings** for the suite.
 3. **Update deployment channel** — sibling APKs update in-app instead of manually pulling from GitHub.
 
+Since 2026-07-02 the repo has a **fourth job**: `server/` hosts **dragonfly-id**, the suite's OIDC
+identity server (live at https://id.dragonflymedia.org). Dragonfly is the suite's **config &
+identity broker** — the plan of record is [BROKER.md](BROKER.md); the as-built status ledger is
+below ("Broker status").
+
 > **Naming:** the app is *Dragonfly*; the self-hosted server (the Tailscale node) is referred to as *the Dragonfly server* below. Don't conflate them in code — use `dragonfly` for the app's package/module names and `server`/`selfHost` for the backend.
 
 ## Stack
@@ -146,7 +151,11 @@ visibility) or version reads and launch intents silently fail.
       2026-07-02. Every app now auto-publishes a signed GitHub Release (+ `version.json`:
       `{"versionCode", "versionName", "sha256", "minSdk"}`) on **any push to `main` that touches
       `android/**`** — shipping to devices is just merging to main. See "Release automation" below.
-- [ ] Push to GitHub (CDRaab01/Dragonfly) — needs the human's credentials.
+- [x] ~~Push to GitHub (CDRaab01/Dragonfly)~~ — done 2026-07-02; direct `git push` works from the
+      host (`gh` CLI is not installed there).
+- [ ] Human: set the `DRAGONFLY_DIR` Actions variable (= the canonical clone path) so the
+      push-to-deploy workflow (`deploy.yml`, runner label `dragonfly`) can redeploy dragonfly-id.
+      Until then the identity server is redeployed manually (`deploy/redeploy.ps1`).
 - [ ] Dashboard v2 candidates (out of v1 scope): live service status from the server stack
       (Plex, Cookbook server, etc.).
 
@@ -223,3 +232,81 @@ will correctly report "release missing version.json" until those ship).
 - `<queries>` block is load-bearing (see registry section).
 - The installer result PendingIntent must be `FLAG_MUTABLE` (system appends status extras).
 - AGP 8.5.0 warns about compileSdk 35; suite-wide known noise, ignore (Cookbook does).
+
+
+---
+
+## Broker status (as-built ledger for BROKER.md — updated 2026-07-03)
+
+BROKER.md is the *plan*; this is what actually shipped. All phases below are **live in production**
+unless marked otherwise.
+
+- **Phase 0 — suite signing key: DONE.** All five apps (Spotter, Plate, Cookbook, Hawksnest,
+  Dragonfly) sign with one secret suite key. Signer SHA-256 pin
+  `5a596c9ea21bfaddae572a66514553c0f8c6db4ed796deabe4f56c9040c2cf8a` is enforced post-build by an
+  `apksigner` guard step in every release workflow (a vanished `KEYSTORE_*` secret fails the build
+  instead of silently publishing an APK signed with the wrong key). The keystore, its passwords,
+  and rotation instructions live OUTSIDE all repos on the host (`~\.dragonfly-suite\`) — the repos
+  are public and the signature permission is only as strong as the key's secrecy. Rotating the key
+  means: new pin in all five workflows + one-time uninstall/reinstall of every app on the phone.
+- **Phase 1 — config broker: DONE.** `SuiteConfigProvider` (signature-permission ContentProvider,
+  authority `com.dragonfly.suiteconfig`, permission `com.dragonfly.permission.READ_SUITE_CONFIG`)
+  serves per-app `server_base_url`/`selfhost_base_url`; Settings has a "Managed app servers" card.
+  Spotter/Plate/Cookbook each carry a `util/SuiteConfigReader` that queries
+  `content://com.dragonfly.suiteconfig/config/<appKey>` in `App.onCreate` (so a value change needs
+  an app process restart to take effect) and falls back to local prefs when the hub is absent,
+  denied, or blank. Hawksnest is deliberately excluded (it targets Home Assistant, not a suite
+  backend). Verified on-device 2026-07-02.
+- **Phase 2 — SSO: LIVE** for Cookbook, Spotter, and Plate (2a–2d complete; Hawksnest N/A — no
+  suite backend to broker). Remaining optional: **2e** (retire per-app password endpoints).
+  Sub-phase record: 2a identity server built+deployed; 2b `POST /auth/suite` live in all three app
+  servers; 2c/2d AppAuth "Sign in with Dragonfly" shipped in all three Android clients and
+  verified on-device. Accounts link **by email** — the identity email must match the app-server
+  account email or a fresh account is created there.
+
+## server/ — dragonfly-id (the identity server)
+
+FastAPI OIDC provider, **live at https://id.dragonflymedia.org** from this repo's root
+`docker-compose.yml` (host ports: API 8004, Postgres 5435 — 8000–8003/5432–5434 belong to the
+sibling apps; cloudflared behind the `tunnel` profile). Python 3.12 (`server/.venv`), Alembic
+migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operator checklist:
+[server/DEPLOY.md](server/DEPLOY.md).
+
+- **Endpoints:** `/.well-known/openid-configuration`, `/.well-known/jwks.json`, `/authorize`
+  (auth-code, **PKCE S256 mandatory**, strict exact redirect-URI match, session-gated → `/login`),
+  `/token` (auth code + rotating refresh; codes single-use, 60 s), `/userinfo`, `/register`
+  (invite-gated via `REGISTRATION_INVITE_CODE` — registration is closed in prod), `/login`
+  (HTML form + session cookie), `/logout`.
+- **Tokens:** RS256 via Authlib JOSE. Access tokens `aud=suite` (what app servers verify);
+  id_tokens `aud=<client_id>` + nonce. Static public clients: `spotter`, `plate`, `cookbook`,
+  `dragonfly`, plus `localdev` for tests. Redirect URIs are `<package>:/oauth2redirect`.
+- **Config gotchas:** `ISSUER` must exactly equal the public URL (it is baked into every issued
+  token); `OIDC_PRIVATE_KEY` is a single line with `\n` escapes; `server/.env` must be LF-ended.
+  Rotating the signing key or changing ISSUER breaks verification in every app server until their
+  JWKS caches refresh / config is updated — coordinate with the apps' `SUITE_JWKS_URL` pins.
+- **App-server side (2b, same pattern in Spotter/Plate/Cookbook):** `POST /auth/suite` accepts a
+  suite access token, validates it against the JWKS (aud/iss checked), find-or-creates the local
+  user **by email** (new users get an unusable random password hash), returns the app's own
+  session tokens. Feature-flagged: unset `SUITE_JWKS_URL`/`SUITE_ISSUER` ⇒ 404, password auth
+  untouched. **Those two vars are pinned in each app's compose `environment:` block on purpose** —
+  Docker Compose does not re-read changed `env_file` content on redeploy, and the flag silently
+  vanishing (twice) was a production 404 regression. Keep non-secret required config in
+  `environment:`, secrets in `.env`.
+- **Android side (2c, same pattern in all three clients):** AppAuth (`net.openid:appauth`) +
+  `SuiteAuthManager` (PKCE code flow → `/token` → app server `/auth/suite` → TokenStore).
+  **Manifest landmine:** AppAuth's `RedirectUriReceiverActivity` inherits the app theme; the suite
+  apps use `android:Theme.Material.*` (not AppCompat) which crashes it on redirect. Every client
+  manifest overrides that activity with `android:theme="@style/Theme.AppCompat.Translucent.
+  NoTitleBar"` + `tools:node="merge"` — do not remove.
+- **Local tests:** `.venv\Scripts\python.exe -m pytest` with a throwaway database (CI spins a
+  Postgres service; locally reuse a sibling db container and an override `DATABASE_URL` pointing
+  at `127.0.0.1` — never `localhost`, IPv6-first resolution stalls every connection).
+
+## Suite-wide release gotchas (learned on-device)
+
+- A local debug build's versionCode (single digits) is far below any CI release (epoch minutes,
+  ~30M) — `adb install` over a CI-installed app fails; uninstall first, or build a release-signed
+  APK with the suite key. Never hand-install an APK with an artificially high versionCode: it
+  permanently escapes the auto-update train until the app is uninstalled.
+- `adb` over Wi-Fi works to the house phone; pull crashes with `adb logcat -d -b crash`. Verify
+  any APK's signer with `apksigner verify --print-certs` before blaming the update flow.
