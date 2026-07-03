@@ -14,7 +14,9 @@ from app.config import settings
 
 def _load_or_generate_private_pem() -> str:
     if settings.oidc_private_key:
-        return settings.oidc_private_key
+        # Accept the PEM as a single-line value with literal \n escapes — survives Docker Compose
+        # env-file parsing (which doesn't handle real multi-line values) and plain .env alike.
+        return settings.oidc_private_key.replace("\\n", "\n")
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     return key.private_bytes(
         encoding=serialization.Encoding.PEM,
