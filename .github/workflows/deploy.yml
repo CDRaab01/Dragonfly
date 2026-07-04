@@ -26,10 +26,12 @@ jobs:
   deploy:
     name: Redeploy dragonfly-id
     runs-on: [self-hosted, dragonfly]
+    # Auto-deploy only on a push-triggered Server CI success, never the weekly scheduled run.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
     steps:
       # No actions/checkout: we deploy the canonical clone on the host (vars.DRAGONFLY_DIR), which
       # owns server/.env + the OIDC key + the pgdata volume — not the runner's ephemeral checkout.

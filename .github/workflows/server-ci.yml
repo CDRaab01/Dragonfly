@@ -8,6 +8,11 @@ on:
     branches: ["main"]
     paths: ["server/**", ".github/workflows/server-ci.yml"]
   workflow_dispatch:
+  schedule:
+    # Weekly bit-rot check (Mondays 09:30 UTC). `schedule` ignores the `paths` filter, so this
+    # runs the full server suite. Deploy is guarded on `workflow_run.event == 'push'`
+    # (deploy.yml), so this weekly run never triggers a redeploy.
+    - cron: "30 9 * * 1"
 
 jobs:
   lint:
