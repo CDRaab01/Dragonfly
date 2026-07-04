@@ -59,3 +59,21 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($ref)) { $ref = 'origin/main' }
           Write-Host "Deploying ref: $ref"
           & "$env:DRAGONFLY_DIR\deploy\redeploy.ps1" -Ref $ref
+
+      # Post-deploy synthetic smoke (ROADMAP Tier 2 #3): proves dragonfly-id serves valid OIDC
+      # metadata + signing keys (what every app server's /auth/suite depends on), not just that
+      # /health is up. Checks health + discovery (issuer/jwks_uri) + JWKS (>=1 key with a kid).
+      # A non-zero exit fails the deploy run.
+      - name: Post-deploy smoke
+        shell: powershell
+        env:
+          DRAGONFLY_DIR: ${{ vars.DRAGONFLY_DIR }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $proj = $env:DRAGONFLY_DIR
+          # Run the smoke INSIDE the server container (python is there; the runner has no host python
+          # on PATH), hitting dragonfly-id on its internal port 8000.
+          docker compose -f "$proj\docker-compose.yml" cp "$proj\scripts\synthetic_smoke.py" server:/tmp/smoke.py
+          if ($LASTEXITCODE -ne 0) { throw "copying smoke script into container failed" }
+          docker compose -f "$proj\docker-compose.yml" exec -T -e DRAGONFLY_ID_URL=http://localhost:8000 server python /tmp/smoke.py
+          if ($LASTEXITCODE -ne 0) { throw "post-deploy smoke FAILED" }
