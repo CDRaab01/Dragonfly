@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
@@ -42,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dragonfly.status.Overall
+import com.dragonfly.status.StatusAggregate
 import com.dragonfly.ui.theme.DragonflyTheme
 import com.dragonfly.update.AppState
 import com.dragonfly.update.UpdateFlowManager
@@ -55,6 +58,7 @@ import design.pulse.ui.components.SectionHeader
 fun HomeScreen(
     onOpenApp: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenStatus: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -105,6 +109,9 @@ fun HomeScreen(
                 )
             }
             item {
+                StatusBanner(status = state.status, onClick = onOpenStatus)
+            }
+            item {
                 SectionHeader("Apps", modifier = Modifier.padding(top = 8.dp))
             }
             items(state.cards, key = { it.status.app.key }) { card ->
@@ -116,6 +123,35 @@ fun HomeScreen(
                     onCancel = { viewModel.resetInstall(card.status.app.key) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun StatusBanner(status: StatusAggregate, onClick: () -> Unit) {
+    val colors = DragonflyTheme.colors
+    val (dotColor, label) = when {
+        status.overall == Overall.CHECKING -> colors.info.base to "Checking services…"
+        status.down > 0 -> colors.warn.base to "${status.down} ${if (status.down == 1) "service" else "services"} down"
+        else -> colors.ok.base to "All systems go"
+    }
+    PanelCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(dotColor))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.titleMedium)
+                Caption(
+                    "Suite status · ${status.up}/${status.total} up" +
+                        if (status.offNetwork > 0) " · ${status.offNetwork} off-network" else "",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -103,7 +103,8 @@ the original plan to copy Hawksnest's `themes.css` is superseded.
 - `POST_NOTIFICATIONS` (API 33+, for background "update available" nudges)
 
 ## Screens
-- **Home (launcher/dashboard):** app cards (Spotter / Plate / Cookbook / Hawksnest) — tap to launch the installed app; each card shows installed version, latest version, status, and a per-app update button when one is available. Global "Check all". Cards for not-yet-installed apps offer install.
+- **Home (launcher/dashboard):** app cards (Spotter / Plate / Cookbook / Hawksnest) — tap to launch the installed app; each card shows installed version, latest version, status, and a per-app update button when one is available. Global "Check all". Cards for not-yet-installed apps offer install. A **suite-status banner** ("All systems go" / "N down") sits below the hero and taps through to Suite status.
+- **Suite status (v2 dashboard):** live "is my world green" surface — per-service up/down for the 4 suite backends (with version·commit + last-deploy from `/version`) and the media stack (reachability only), grouped Suite / Media / Automation. See the v2 build log below.
 - **App detail:** version history, source config, changelog (GitHub release body if available).
 - **Settings:** as above.
 
@@ -157,8 +158,13 @@ visibility) or version reads and launch intents silently fail.
 - [x] ~~Set the `DRAGONFLY_DIR` Actions variable~~ — done 2026-07-03; push-to-deploy verified
       end-to-end (manual dispatch → runner `dragonfly` → redeploy.ps1 → health gate green,
       public OIDC discovery 200).
-- [ ] Dashboard v2 candidates (out of v1 scope): live service status from the server stack
-      (Plex, Cookbook server, etc.).
+- [x] ~~Dashboard v2 candidates (out of v1 scope): live service status from the server stack
+      (Plex, Cookbook server, etc.).~~ — **DONE 2026-07-04** (ROADMAP Tier 3 #1). Suite status
+      dashboard shipped: `status/` package + `ui/status/`, banner on Home. See the v2 build log.
+- [ ] Confirm Hawksnest's tailnet-reachable status URL. The dashboard registry currently guesses
+      `http://dragonfly.tail2ce561.ts.net:30080`, which is unreachable even from the host (k3s runs
+      in WSL; exposure is still open in hawksnest-automation), so that row shows "off-network"
+      until the real URL is pinned. Neutral state, not a false outage.
 
 ---
 
@@ -233,6 +239,32 @@ will correctly report "release missing version.json" until those ship).
 - `<queries>` block is load-bearing (see registry section).
 - The installer result PendingIntent must be `FLAG_MUTABLE` (system appends status extras).
 - AGP 8.5.0 warns about compileSdk 35; suite-wide known noise, ignore (Cookbook does).
+
+## Build log (2026-07-04) — v2 live status dashboard (ROADMAP Tier 3 #1)
+
+A glanceable "is my world green" surface: a status banner on Home → a **Suite status** screen.
+`:app:testDebugUnitTest` (new `StatusResolverTest`, 10/10) + `:app:assembleDebug` green; the 4
+suite `/health`+`/version` and the 6 media endpoints were live-probed during the build. On-device
+render/tap-through deferred (needs the phone).
+
+**Architecture (package `com.dragonfly.status`, mirrors `update/`):**
+- `MonitoredService`/`ServiceRegistry` — watched **backends**, deliberately separate from
+  `AppRegistry` (services ≠ installable apps: the `dragonfly` app's backend is `id.*`, Hawksnest
+  has no public backend, the media stack has no app). Two probe types: **SUITE** (`/health` must be
+  `{"status":"ok"}`, `/version` → version·commit·built_at) and **REACHABILITY** (any non-gateway
+  HTTP response = up — Caddy basic_auth `401` counts, per OPERATIONS.md §3).
+- `StatusResolver` — the pure, unit-tested half (classification, `/version` parse, relative time,
+  Home-banner aggregate), the `ReleaseResolver` precedent.
+- `StatusProber` — parallel fan-out on a **dedicated 6s-timeout OkHttp client** (`@Named("status")`
+  in `NetworkModule`) so a dead host can't stall the dashboard; `StatusRepository` caches one shared
+  `StateFlow` for the banner + screen.
+- `ui/status/` — `SuiteStatusScreen` (grouped Suite/Media/Automation) + the Home banner; new
+  `Routes.STATUS`.
+
+**Notes / gotchas:**
+- Tailnet-only services (Hawksnest) degrade to **"off-network"**, never a false "down".
+- Home's status refresh runs in its own coroutine, independent of the (slower) GitHub update check.
+- Media/tailnet probes are arbitrary GETs — **no `<queries>` entry** (that's package visibility).
 
 
 ---

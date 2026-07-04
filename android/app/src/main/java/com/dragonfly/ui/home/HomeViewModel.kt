@@ -5,6 +5,10 @@ import android.content.Intent
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dragonfly.status.Overall
+import com.dragonfly.status.StatusAggregate
+import com.dragonfly.status.StatusRepository
+import com.dragonfly.status.StatusResolver
 import com.dragonfly.update.AppState
 import com.dragonfly.update.AppStatus
 import com.dragonfly.update.InstalledAppsDataSource
@@ -28,6 +32,7 @@ data class HomeUiState(
     val cards: List<CardUi> = emptyList(),
     val checking: Boolean = false,
     val updatesAvailable: Int = 0,
+    val status: StatusAggregate = StatusAggregate(Overall.CHECKING, 0, 0, 0, 0),
 ) {
     data class CardUi(
         val status: AppStatus,
@@ -41,6 +46,7 @@ class HomeViewModel @Inject constructor(
     private val updateRepository: UpdateRepository,
     private val flowManager: UpdateFlowManager,
     private val installedApps: InstalledAppsDataSource,
+    private val statusRepository: StatusRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -59,7 +65,13 @@ class HomeViewModel @Inject constructor(
     val needsInstallPermission = _needsInstallPermission.asStateFlow()
 
     val uiState: StateFlow<HomeUiState> =
-        combine(statuses, checking, flowManager.phases, icons) { statusList, isChecking, phases, iconMap ->
+        combine(
+            statuses,
+            checking,
+            flowManager.phases,
+            icons,
+            statusRepository.statuses,
+        ) { statusList, isChecking, phases, iconMap, serviceStatuses ->
             HomeUiState(
                 cards = statusList.map {
                     HomeUiState.CardUi(
@@ -70,6 +82,7 @@ class HomeViewModel @Inject constructor(
                 },
                 checking = isChecking,
                 updatesAvailable = statusList.count { it.state == AppState.UPDATE_AVAILABLE },
+                status = StatusResolver.aggregate(serviceStatuses),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -84,6 +97,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
+        // Suite service status runs independently of the (slower) app-update check so the banner
+        // isn't gated on GitHub calls, and a dead backend can't stall the update UI.
+        viewModelScope.launch { runCatching { statusRepository.refresh() } }
         if (checking.value) return
         viewModelScope.launch {
             checking.value = true
