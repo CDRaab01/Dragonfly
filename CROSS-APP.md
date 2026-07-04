@@ -74,12 +74,20 @@ separate deliverable and becomes a pure consumer.
 
 ## Infrastructure prerequisites (do alongside items 1–4, not after)
 
-- **Service tokens replace `CROSS_APP_SECRET`.** Every surface above raises the blast radius
-  of the one shared symmetric secret (already a three-repo flag-day to rotate). Target: the
-  provider validates RS256 tokens from dragonfly-id (aud=`cross-app` or reuse `suite`) via the
-  JWKS trust each server already has for SSO. New surfaces should be written against a small
-  shared verify helper so the swap is one function, not N endpoints. Until the swap, new
-  surfaces may launch on `CROSS_APP_SECRET` but must not deepen its coupling (no new claims).
+- **Service tokens replace `CROSS_APP_SECRET`** (ROADMAP T2 #5 — *in progress 2026-07-04*).
+  Every surface above raises the blast radius of the one shared symmetric secret (a three-repo
+  flag-day to rotate). **Design as built:** dragonfly-id issues short-lived RS256 tokens from
+  `POST /cross-app/token` — a confidential client (each app *server* has its own
+  `client_id`+`client_secret`) requests a token for a `subject_email`; the token is
+  `{iss, aud:"cross-app", azp, email, exp}`. Providers validate it against the JWKS they already
+  trust for SSO, requiring **`aud="cross-app"`** (deliberately distinct from SSO's `aud="suite"`
+  — the audience scoping the old secret lacked). Provider verification is a single shared
+  `get_cross_app_user` helper (swap is one function, not N endpoints) and needs **no new secret**
+  (reuses `SUITE_JWKS_URL`/`SUITE_ISSUER`); only consumers gain a client credential. **Rollout is
+  dual-accept:** providers accept both the legacy HS256 `CROSS_APP_SECRET` token and the new RS256
+  token during the transition; consumers flip to RS256 once their client creds are provisioned;
+  `CROSS_APP_SECRET` is dropped in a later cleanup once nothing mints HS256. New surfaces should be
+  written against the shared helper.
 - **Contract fixtures.** Cross-app contracts are currently tested only against hand-written
   mocks — nothing detects drift between Plate's real `/recipes/export` and Cookbook's mock of
   it. Rule going forward: the **provider** repo commits response-shape fixtures (sample JSON)

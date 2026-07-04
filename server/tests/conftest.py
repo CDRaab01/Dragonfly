@@ -10,6 +10,8 @@ os.environ.setdefault("DB_NULLPOOL", "true")
 # https_only session cookies (hsts_enabled) get dropped over the http test client, which loses the
 # login session before /authorize. Force it off for tests (the live .env carries HSTS_ENABLED=true).
 os.environ.setdefault("HSTS_ENABLED", "false")
+# Enable the cross-app service-token endpoint with a known test client (ROADMAP T2 #5).
+os.environ.setdefault("CROSS_APP_CLIENTS", "testclient:testsecret")
 
 import pytest
 import pytest_asyncio
