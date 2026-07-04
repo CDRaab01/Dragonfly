@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+  schedule:
+    # Weekly bit-rot check (Mondays 09:00 UTC) so "green" stays meaningful between pushes.
+    # This is the Android CI; Deploy watches "Server CI", not this, so no deploy can result.
+    - cron: "0 9 * * 1"
 
 # Tests + debug build on push/PR. Signed release publishing lives in release.yml (auto on main
 # pushes that touch android/**). The Android jobs check the repo out into Dragonfly/ and the
