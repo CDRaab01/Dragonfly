@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     # restart would invalidate live tokens). Generate a stable key for deployment.
     oidc_private_key: str | None = None
     oidc_key_id: str = "dragonfly-id-1"
+    # Optional SECOND key published in JWKS but NEVER used to sign — the seam for a zero-downtime
+    # signing-key rotation. During a rotation you either pre-publish the incoming key here before
+    # cutting `OIDC_PRIVATE_KEY` over to it, or keep the outgoing key published here until the last
+    # token it signed has expired. Public-key PEM only (single line with \n escapes, like
+    # OIDC_PRIVATE_KEY); its kid must differ from OIDC_KEY_ID; set both vars or neither. Full
+    # procedure: server/DEPLOY.md "Rotating the OIDC signing key".
+    oidc_secondary_public_key: str | None = None
+    oidc_secondary_key_id: str | None = None
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
