@@ -8,32 +8,32 @@ version = "0.1.0"
 requires-python = ">=3.11"
 # The suite's identity provider (BROKER.md Phase 2). OIDC via Authlib; argon2id password hashing.
 dependencies = [
-    "fastapi==0.111.0",
-    "uvicorn[standard]==0.29.0",
-    "sqlalchemy[asyncio]==2.0.30",
-    "alembic==1.13.1",
-    "asyncpg==0.29.0",
-    "pydantic==2.7.1",
-    "pydantic[email]==2.7.1",
-    "pydantic-settings==2.2.1",
-    "authlib==1.3.1",
-    "cryptography==42.0.8",
-    "argon2-cffi==23.1.0",
+    "fastapi==0.139.0",
+    "uvicorn[standard]==0.50.0",
+    "sqlalchemy[asyncio]==2.0.51",
+    "alembic==1.18.5",
+    "asyncpg==0.31.0",
+    "pydantic==2.13.4",
+    "pydantic[email]==2.13.4",
+    "pydantic-settings==2.14.2",
+    "authlib==1.7.2",
+    "cryptography==49.0.0",
+    "argon2-cffi==25.1.0",
     "passlib==1.7.4",
-    "httpx==0.27.0",
-    "python-multipart==0.0.9",
-    "greenlet==3.0.3",
-    "slowapi==0.1.9",
-    "email-validator==2.1.1",
+    "httpx==0.28.1",
+    "python-multipart==0.0.32",
+    "greenlet==3.5.3",
+    "slowapi==0.1.10",
+    "email-validator==2.3.0",
     "itsdangerous==2.2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest==8.2.0",
-    "pytest-asyncio==0.23.6",
-    "httpx==0.27.0",
-    "ruff==0.4.4",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "httpx==0.28.1",
+    "ruff==0.15.20",
 ]
 
 [tool.hatch.build.targets.wheel]
