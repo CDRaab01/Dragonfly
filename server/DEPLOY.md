@@ -39,6 +39,35 @@ curl -X POST http://127.0.0.1:8004/register \
    Spotter's `deploy/` — a `workflow_run` redeploy after Server CI passes on `main`). Until then,
    deploy by hand: `git pull && docker compose up -d --build`.
 
+## Cross-app service tokens (retiring `CROSS_APP_SECRET`)
+
+ROADMAP T2 #5. dragonfly-id issues short-lived **RS256 cross-app tokens** so the suite's app
+servers stop sharing one symmetric `CROSS_APP_SECRET` across three `.env`s. A calling server
+(plate/cookbook/spotter) authenticates with its own confidential client credential and requests a
+token for a specific user email; providers validate it against the JWKS they **already** trust for
+SSO, requiring `aud="cross-app"` (distinct from SSO's `aud="suite"`).
+
+**Enable it here:** set `CROSS_APP_CLIENTS` in `server/.env` to a `client_id:secret` list, one
+secret per calling server, then redeploy (`docker compose up -d --force-recreate server`):
+
+```
+CROSS_APP_CLIENTS=plate:<secret-p>,cookbook:<secret-c>,spotter:<secret-s>
+```
+
+Generate each secret with `openssl rand -hex 32`. Empty ⇒ `POST /cross-app/token` returns 404
+(disabled), exactly like the other suite feature flags. The same secret goes into the calling
+server's own `.env` as `CROSS_APP_CLIENT_ID` / `CROSS_APP_CLIENT_SECRET` (see each app's docs).
+
+**Endpoint:** `POST /cross-app/token` (form: `client_id`, `client_secret`, `subject_email`) →
+`{access_token, token_type, expires_in}`. The token is `{iss, aud:"cross-app", azp:<client>,
+email, type:"cross_app", exp}` (120 s). Rotating a caller's access = change one line in two files
+(here + that server) and redeploy both — no three-repo flag-day. The signing key itself rotates
+zero-downtime (see below).
+
+**Rollout is dual-accept:** providers accept both the legacy HS256 `CROSS_APP_SECRET` token and the
+new RS256 token during the transition, so servers can be updated one at a time. Drop `CROSS_APP_SECRET`
+only after every consumer mints RS256 (a later cleanup).
+
 ## Rotating the OIDC signing key
 
 Rotate on a schedule (e.g. yearly) or immediately on any suspicion the private key leaked. This is

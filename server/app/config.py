@@ -30,6 +30,16 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
+    # --- Cross-app service tokens (ROADMAP T2 #5) ---
+    # Confidential clients allowed to request an RS256 cross-app token (aud="cross-app") from
+    # POST /cross-app/token, replacing the suite's shared symmetric CROSS_APP_SECRET. Format is a
+    # comma/whitespace-separated list of `client_id:secret` pairs, e.g.
+    # "plate:s3cret1,cookbook:s3cret2,spotter:s3cret3". Empty ⇒ the endpoint is disabled (404).
+    # Secrets are compared in constant time; keep them in .env (secret), one per calling server.
+    cross_app_clients: str = ""
+    # Cross-app tokens are used for a single immediate server-to-server call — keep them short.
+    cross_app_token_expire_seconds: int = 120
+
     # Test-suite escape hatch (see database.py / Cookbook's note): NullPool avoids binding pooled
     # asyncpg connections to a dead per-test event loop.
     db_nullpool: bool = False

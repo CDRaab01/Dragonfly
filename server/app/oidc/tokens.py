@@ -16,6 +16,9 @@ from app.config import settings
 from app.oidc.keys import KEY_ID, PRIVATE_KEY_PEM, public_key_set
 
 SUITE_AUDIENCE = "suite"
+# Cross-app service tokens (ROADMAP T2 #5) carry their own audience so a user's SSO access token
+# (aud="suite") can never be replayed on a cross-app provider surface, and vice versa.
+CROSS_APP_AUDIENCE = "cross-app"
 
 
 def _sign(payload: dict) -> str:
@@ -53,6 +56,27 @@ def mint_id_token(*, sub: str, email: str, name: str, client_id: str, nonce: str
     if nonce:
         payload["nonce"] = nonce
     return _sign(payload)
+
+
+def mint_cross_app_token(*, email: str, azp: str) -> str:
+    """A short-lived RS256 service token authorizing a cross-app call on behalf of `email`.
+
+    `azp` is the confidential client (calling server) that requested it. Providers validate this
+    against the same JWKS they already trust for SSO, but require `aud="cross-app"`, then resolve
+    the local user by `email` — the only identity stable across the apps' independent user tables.
+    """
+    now = int(time.time())
+    return _sign(
+        {
+            "iss": settings.issuer,
+            "aud": CROSS_APP_AUDIENCE,
+            "azp": azp,
+            "email": email,
+            "type": "cross_app",
+            "iat": now,
+            "exp": now + settings.cross_app_token_expire_seconds,
+        }
+    )
 
 
 def new_refresh_token() -> str:
