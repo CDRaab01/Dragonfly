@@ -60,6 +60,4 @@ async def export(request: Request, db: DbDep) -> JSONResponse:
         "user": _serialize_user(user),
     }
     filename = f"dragonfly-id-export-{datetime.date.today().isoformat()}.json"
-    return JSONResponse(
-        data, headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+    return JSONResponse(data, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
