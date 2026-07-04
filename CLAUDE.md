@@ -283,8 +283,13 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   `dragonfly`, plus `localdev` for tests. Redirect URIs are `<package>:/oauth2redirect`.
 - **Config gotchas:** `ISSUER` must exactly equal the public URL (it is baked into every issued
   token); `OIDC_PRIVATE_KEY` is a single line with `\n` escapes; `server/.env` must be LF-ended.
-  Rotating the signing key or changing ISSUER breaks verification in every app server until their
-  JWKS caches refresh / config is updated — coordinate with the apps' `SUITE_JWKS_URL` pins.
+  Changing ISSUER breaks verification in every app server until config is updated — coordinate with
+  the apps' `SUITE_JWKS_URL`/`SUITE_ISSUER` pins. **Rotating the signing key is zero-downtime** and
+  needs no app-side change: publish a second verify-only key in the JWKS
+  (`OIDC_SECONDARY_PUBLIC_KEY`/`OIDC_SECONDARY_KEY_ID`), sign with the new one, retire the old after
+  the ~15 min access-token tail expires — full runbook in [server/DEPLOY.md](server/DEPLOY.md)
+  "Rotating the OIDC signing key" (the app servers force-refetch JWKS on an unknown `kid`, so the
+  cutover is seamless).
 - **App-server side (2b, same pattern in Spotter/Plate/Cookbook):** `POST /auth/suite` accepts a
   suite access token, validates it against the JWKS (aud/iss checked), find-or-creates the local
   user **by email** (new users get an unusable random password hash), returns the app's own

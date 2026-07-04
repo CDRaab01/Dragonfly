@@ -13,7 +13,7 @@ from authlib.jose import jwt
 from authlib.jose.errors import JoseError
 
 from app.config import settings
-from app.oidc.keys import KEY_ID, PRIVATE_KEY_PEM, PUBLIC_KEY_PEM
+from app.oidc.keys import KEY_ID, PRIVATE_KEY_PEM, public_key_set
 
 SUITE_AUDIENCE = "suite"
 
@@ -64,9 +64,12 @@ def validate_access_token(token: str) -> dict | None:
     App servers do the equivalent using the published JWKS; this is for our own `/userinfo`.
     """
     try:
-        claims = jwt.decode(token, PUBLIC_KEY_PEM)
+        # Verify against every published key (matched by the token's `kid`), so a token signed by
+        # the outgoing key still validates during a rotation overlap. An unknown/missing kid makes
+        # Authlib's KeySet raise ValueError — treat it, like a bad signature, as an invalid token.
+        claims = jwt.decode(token, public_key_set())
         claims.validate()  # exp/nbf
-    except JoseError:
+    except (JoseError, ValueError, KeyError):
         return None
     if claims.get("iss") != settings.issuer or claims.get("aud") != SUITE_AUDIENCE:
         return None
