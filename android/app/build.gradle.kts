@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
@@ -11,7 +10,7 @@ val keystorePath: String? = System.getenv("KEYSTORE_PATH")
 
 android {
     namespace = "com.dragonfly"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.dragonfly"
@@ -64,9 +63,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -77,6 +73,8 @@ android {
 }
 
 dependencies {
+    // Hilt 2.60 generated code references errorprone annotations at compile time.
+    compileOnly("com.google.errorprone:error_prone_annotations:2.36.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -118,7 +116,9 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
-    testImplementation(kotlin("test"))
+    // Under AGP 9 built-in Kotlin, kotlin("test") no longer auto-selects the JVM test framework
+    // binding, so kotlin.test.Test went unresolved. Pin kotlin-test-junit (JVM actual -> JUnit4).
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.2.10")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
