@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
@@ -31,6 +32,22 @@ object NetworkModule {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(gitHubAuth(patStore))
+            .build()
+
+    /**
+     * A fast-failing client for the status dashboard: liveness pings must not inherit the main
+     * client's 15s/60s timeouts, or a single dead host would stall the whole "is my world green"
+     * fan-out. No PAT interceptor — these hit the suite/media hosts, never GitHub.
+     */
+    @Provides
+    @Singleton
+    @Named("status")
+    fun statusOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(6, TimeUnit.SECONDS)
+            .readTimeout(6, TimeUnit.SECONDS)
+            .callTimeout(8, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
             .build()
 
     private fun gitHubAuth(patStore: PatStore) = Interceptor { chain ->
