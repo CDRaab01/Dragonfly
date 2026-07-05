@@ -1,4 +1,4 @@
-﻿import secrets
+import secrets
 from urllib.parse import parse_qs, urlparse
 
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
@@ -81,9 +81,7 @@ async def test_full_auth_code_pkce_flow(client):
     assert claims["aud"] == "suite"
     assert claims["email"] == "flow@example.com"
 
-    r = await client.get(
-        "/userinfo", headers={"Authorization": f"Bearer {body['access_token']}"}
-    )
+    r = await client.get("/userinfo", headers={"Authorization": f"Bearer {body['access_token']}"})
     assert r.status_code == 200
     assert r.json()["email"] == "flow@example.com"
 
@@ -157,3 +155,18 @@ async def test_missing_pkce_rejected(client):
     assert r.status_code == 302
     assert parse_qs(urlparse(r.headers["location"]).query)["error"] == ["invalid_request"]
 
+
+async def test_magpie_client_registered_with_its_redirect_uri(client):
+    """Magpie CLAUDE.md's open item, closed: the `magpie` client resolves and accepts its
+    Android AppAuth redirect scheme — the same registration shape as every sibling app."""
+    await _register_and_login(client, "magpie-flow@example.com")
+    _, challenge = _pkce()
+    r = await client.get(
+        "/authorize",
+        params=_authorize_params(
+            challenge, client_id="magpie", redirect_uri="com.magpie:/oauth2redirect"
+        ),
+    )
+    assert r.status_code == 302
+    q = parse_qs(urlparse(r.headers["location"]).query)
+    assert "code" in q

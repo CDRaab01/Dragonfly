@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # Cross-app tokens are used for a single immediate server-to-server call — keep them short.
     cross_app_token_expire_seconds: int = 120
 
+    # --- Synthetic-smoke tokens (Magpie CLAUDE.md §9 — SSO-only apps have no register/login to
+    # script a post-deploy smoke test against). Same `client_id:secret` list shape as
+    # cross_app_clients, but POST /smoke/token mints an aud="suite" token directly (not
+    # aud="cross-app") for a caller-supplied throwaway email — small, auditable, and revocable
+    # independently of the real OIDC client list. Empty ⇒ the endpoint is disabled (404).
+    smoke_clients: str = ""
+
     # Test-suite escape hatch (see database.py / Cookbook's note): NullPool avoids binding pooled
     # asyncpg connections to a dead per-test event loop.
     db_nullpool: bool = False

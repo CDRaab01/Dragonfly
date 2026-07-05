@@ -79,6 +79,28 @@ def mint_cross_app_token(*, email: str, azp: str) -> str:
     )
 
 
+def mint_smoke_token(*, email: str, azp: str) -> str:
+    """A short-lived aud="suite" token for a caller-supplied throwaway email — used by an
+    SSO-only app's post-deploy synthetic smoke (Magpie CLAUDE.md §9), which has no
+    register/login endpoint of its own to script against. `sub` is synthetic (there is no real
+    dragonfly-id user backing this call): app servers' suite-login only reads `email`, never
+    `sub`, to find-or-create the local account, so this is safe.
+    """
+    now = int(time.time())
+    return _sign(
+        {
+            "iss": settings.issuer,
+            "sub": f"smoke:{azp}",
+            "aud": SUITE_AUDIENCE,
+            "email": email,
+            "client_id": azp,
+            "scope": "openid",
+            "iat": now,
+            "exp": now + settings.access_token_expire_minutes * 60,
+        }
+    )
+
+
 def new_refresh_token() -> str:
     return secrets.token_urlsafe(48)
 

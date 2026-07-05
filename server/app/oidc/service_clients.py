@@ -24,6 +24,7 @@ def _parse(raw: str) -> dict[str, str]:
 
 
 _CLIENTS: dict[str, str] = _parse(settings.cross_app_clients)
+_SMOKE_CLIENTS: dict[str, str] = _parse(settings.smoke_clients)
 
 
 def cross_app_enabled() -> bool:
@@ -36,6 +37,22 @@ def verify_service_client(client_id: str, client_secret: str) -> bool:
     expected = _CLIENTS.get(client_id)
     if expected is None:
         # Still burn a comparison so timing doesn't distinguish unknown-client from bad-secret.
+        secrets.compare_digest(client_secret, client_secret)
+        return False
+    return secrets.compare_digest(client_secret, expected)
+
+
+def smoke_enabled() -> bool:
+    """Whether any smoke client is configured (POST /smoke/token 404s otherwise)."""
+    return bool(_SMOKE_CLIENTS)
+
+
+def verify_smoke_client(client_id: str, client_secret: str) -> bool:
+    """Same constant-time-or-nothing check as verify_service_client, over the separate
+    smoke-client list — deliberately not the same dict, so a smoke credential can never be
+    reused to mint a cross-app token or vice versa."""
+    expected = _SMOKE_CLIENTS.get(client_id)
+    if expected is None:
         secrets.compare_digest(client_secret, client_secret)
         return False
     return secrets.compare_digest(client_secret, expected)

@@ -12,6 +12,8 @@ os.environ.setdefault("DB_NULLPOOL", "true")
 os.environ.setdefault("HSTS_ENABLED", "false")
 # Enable the cross-app service-token endpoint with a known test client (ROADMAP T2 #5).
 os.environ.setdefault("CROSS_APP_CLIENTS", "testclient:testsecret")
+# Enable the synthetic-smoke token endpoint with a known test client (Magpie CLAUDE.md §9).
+os.environ.setdefault("SMOKE_CLIENTS", "smoketestclient:smoketestsecret")
 
 import pytest
 import pytest_asyncio

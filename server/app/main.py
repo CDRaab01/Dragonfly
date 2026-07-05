@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.limiter import limiter
-from app.routers import accounts, cross_app, export, oidc
+from app.routers import accounts, cross_app, export, oidc, smoke
 
 # Single source for the human-facing version, reused by GET /version below.
 APP_VERSION = "0.1.0"
@@ -56,6 +56,7 @@ app.include_router(accounts.router)
 app.include_router(oidc.router)
 app.include_router(cross_app.router)
 app.include_router(export.router)
+app.include_router(smoke.router)
 
 
 @app.get("/health", tags=["health"])
