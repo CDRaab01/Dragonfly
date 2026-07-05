@@ -26,11 +26,12 @@ staying auditable.
 |---|---|
 | `app/oidc/keys.py` | RS256 signing key(s) + JWKS. Active signer + optional **secondary verify-only key** (`OIDC_SECONDARY_PUBLIC_KEY`/`_KEY_ID`) for zero-downtime rotation; boot-time guards reject half-set/kid-colliding config |
 | `app/oidc/tokens.py` | Token mint/verify (Authlib JOSE). Access tokens `aud=suite` (~15 min), id_tokens `aud=<client_id>`+nonce, rotating refresh tokens |
-| `app/oidc/clients.py` | Static public clients: `spotter`, `plate`, `cookbook`, `dragonfly` (+ `localdev`); redirect URIs `<package>:/oauth2redirect`; PKCE S256 mandatory, exact redirect match |
-| `app/oidc/service_clients.py` | Confidential clients for cross-app tokens (`CROSS_APP_CLIENTS` env, `client_id:secret` list) |
+| `app/oidc/clients.py` | Static public clients: `spotter`, `plate`, `cookbook`, `dragonfly`, `magpie` (+ `localdev`); redirect URIs `<package>:/oauth2redirect`; PKCE S256 mandatory, exact redirect match |
+| `app/oidc/service_clients.py` | Confidential clients for cross-app tokens (`CROSS_APP_CLIENTS` env, `client_id:secret` list) and for synthetic-smoke tokens (`SMOKE_CLIENTS`, same list shape, deliberately a separate dict so one credential type can never mint the other's token) |
 | `app/routers/oidc.py` | `/.well-known/*`, `/authorize` (session-gated → `/login` HTML form), `/token` (single-use 60 s codes), `/userinfo`, `/login`, `/logout` |
 | `app/routers/accounts.py` | `/register` (invite-gated via `REGISTRATION_INVITE_CODE` — closed in prod), account surface |
 | `app/routers/cross_app.py` | `POST /cross-app/token` — client-credentials → short-lived RS256 token `aud="cross-app"`; 404 until `CROSS_APP_CLIENTS` is set |
+| `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for a caller-supplied throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set |
 | `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens, sessions, users |
 
 ### Config gotchas (each has bitten)
@@ -49,7 +50,7 @@ staying auditable.
 
 | Package | Responsibility |
 |---|---|
-| `registry/` | `AppRegistry` — the five managed apps (key/package/repo), single source of truth. Every package here must also be in the manifest `<queries>` block or version reads silently fail |
+| `registry/` | `AppRegistry` — the six managed apps (key/package/repo), single source of truth. Every package here must also be in the manifest `<queries>` block or version reads silently fail |
 | `settings/` | DataStore settings (source selection, self-host URL, auto-check interval, Wi-Fi-only) + `PatStore` (GitHub PAT, EncryptedSharedPreferences, attached only to `api.github.com`) |
 | `net/` | Retrofit `GitHubApi`, `HttpFetcher` (manifest/version.json GETs), `NetworkStatus` |
 | `update/` | The update pipeline: `ReleaseResolver` (pure, unit-tested: parse `version.json`, pick assets, diff versionCodes), `UpdateRepository`, `UpdateFlowManager` (download → verify → install phases), `InstalledAppsDataSource` |

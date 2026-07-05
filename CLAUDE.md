@@ -126,6 +126,7 @@ Registry as built (`registry/AppRegistry.kt`) — five apps, Dragonfly included 
 | plate | `com.plate` | CDRaab01/Plate |
 | cookbook | `com.cookbook` | CDRaab01/Cookbook |
 | hawksnest | `com.hawksnest` | CDRaab01/Hawksnest |
+| magpie | `com.magpie` | CDRaab01/Magpie |
 | dragonfly | `com.dragonfly` | CDRaab01/Dragonfly |
 
 Every managed package must also appear in the manifest `<queries>` block (API 30+ package
@@ -317,7 +318,13 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   `CROSS_APP_CLIENTS`, disabled/404 when unset — ROADMAP T2 #5, see [CROSS-APP.md](CROSS-APP.md)).
 - **Tokens:** RS256 via Authlib JOSE. Access tokens `aud=suite` (what app servers verify);
   id_tokens `aud=<client_id>` + nonce. Static public clients: `spotter`, `plate`, `cookbook`,
-  `dragonfly`, plus `localdev` for tests. Redirect URIs are `<package>:/oauth2redirect`.
+  `dragonfly`, `magpie`, plus `localdev` for tests. Redirect URIs are `<package>:/oauth2redirect`.
+  **Synthetic-smoke tokens (2026-07-05, Magpie Phase 8/1):** `POST /smoke/token` mints an
+  `aud=suite` token for a caller-supplied throwaway email via a confidential client credential
+  (`SMOKE_CLIENTS` env, same `client_id:secret` list shape as `CROSS_APP_CLIENTS` but a
+  deliberately separate dict — a smoke credential can never mint a cross-app token or vice
+  versa). Exists because Magpie is SSO-only (no register/login) and needs *something* to mint
+  a session token against for its post-deploy smoke test; 404 until `SMOKE_CLIENTS` is set.
 - **Config gotchas:** `ISSUER` must exactly equal the public URL (it is baked into every issued
   token); `OIDC_PRIVATE_KEY` is a single line with `\n` escapes; `server/.env` must be LF-ended.
   Changing ISSUER breaks verification in every app server until config is updated — coordinate with

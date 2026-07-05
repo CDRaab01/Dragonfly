@@ -20,6 +20,7 @@
         <package android:name="com.plate" />
         <package android:name="com.cookbook" />
         <package android:name="com.hawksnest" />
+        <package android:name="com.magpie" />
     </queries>
 
     <application

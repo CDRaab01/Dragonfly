@@ -18,6 +18,19 @@ object ServiceRegistry {
         suite("cookbook", "Cookbook", "https://cookbook.dragonflymedia.org"),
         // The identity server is the `dragonfly` app's backend; hostname is id.*, not dragonfly.*.
         suite("dragonfly-id", "Dragonfly ID", "https://id.dragonflymedia.org"),
+        // Magpie is deliberately tailnet-only (no public hostname, CLAUDE.md §0/§8 — it holds
+        // financial data) — a SUITE probe (real /health + /version), but TAILNET_ONLY
+        // reachability, so it degrades to "off-network" rather than a false "down" from a
+        // network that can't reach it, same treatment as Hawksnest below.
+        MonitoredService(
+            key = "magpie",
+            displayName = "Magpie",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "magpie",
+        ),
 
         media("plex", "Plex", "https://plex.dragonflymedia.org"),
         media("radarr", "Radarr", "https://radarr.dragonflymedia.org"),
