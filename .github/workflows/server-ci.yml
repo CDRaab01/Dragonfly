@@ -63,3 +63,20 @@ jobs:
       # Migration smoke test: the schema must apply cleanly from scratch.
       - run: alembic upgrade head
       - run: pytest tests/ -v --tb=short
+
+  dep-audit:
+    name: "Dependency audit (pip-audit)"
+    runs-on: ubuntu-latest
+    # Weekly-only + advisory: `schedule` ignores the paths filter and never triggers deploy.
+    if: github.event_name == 'schedule'
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip install -e ".[dev]"
+      - run: pip-audit --desc

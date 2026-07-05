@@ -16,6 +16,15 @@ on:
 # sibling Pulse repo into Pulse/, so the composite build's includeBuild("../../Pulse") resolves.
 
 jobs:
+  secret-scan:
+    name: "Secret scan (gitleaks)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # full history so a secret in any past commit is caught
+      - run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --redact --no-banner
+
   android-test:
     name: "Android — Unit Tests"
     runs-on: ubuntu-latest
