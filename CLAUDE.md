@@ -132,6 +132,9 @@ Every managed package must also appear in the manifest `<queries>` block (API 30
 visibility) or version reads and launch intents silently fail.
 
 ## Constraints / notes
+- **Update `ARCHITECTURE.md` in the same PR** when a change alters architecture — a module's
+  responsibility, a layer boundary, a cross-app/identity contract, or the data model. Silently-drifting
+  docs are how Spotter's API docs said `/plans` for a round (ROADMAP2 T2 #5c).
 - No Play Store; sideload-only suite. Do not add Play-specific APIs.
 - SHA-256 verification is mandatory for both sources (self-host manifest and GitHub `version.json` both publish hashes).
 - Keep Dragonfly itself updatable via the same flow (self-update path) — it lists itself as a managed app.
