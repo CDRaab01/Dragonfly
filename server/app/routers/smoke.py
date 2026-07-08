@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.limiter import limiter
 from app.oidc import tokens
-from app.oidc.service_clients import smoke_enabled, verify_smoke_client
+from app.oidc.service_clients import smoke_enabled, smoke_subject_allowed, verify_smoke_client
 
 router = APIRouter(tags=["smoke"])
 
@@ -34,6 +34,10 @@ async def smoke_token(
     email = subject_email.strip().lower()
     if "@" not in email:
         return JSONResponse({"error": "invalid_request"}, status_code=400)
+    # F2: even a valid smoke credential may only mint for a pre-designated throwaway email —
+    # never an arbitrary account. Checked after client auth so it isn't an unauthenticated oracle.
+    if not smoke_subject_allowed(email):
+        return JSONResponse({"error": "subject_not_allowed"}, status_code=403)
     token = tokens.mint_smoke_token(email=email, azp=client_id)
     return {
         "access_token": token,

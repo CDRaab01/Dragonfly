@@ -325,6 +325,11 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   deliberately separate dict — a smoke credential can never mint a cross-app token or vice
   versa). Exists because Magpie is SSO-only (no register/login) and needs *something* to mint
   a session token against for its post-deploy smoke test; 404 until `SMOKE_CLIENTS` is set.
+  **The subject email is allowlisted (`SMOKE_SUBJECT_EMAILS`, fail-closed — F2, 2026-07-08):**
+  even a valid smoke credential may only mint for a pre-designated throwaway email, else 403;
+  an empty allowlist denies everyone. Without it the smoke secret was an impersonate-any-account
+  oracle across every suite app. Non-secret ⇒ pinned in compose `environment:` (invariant #4),
+  set to `magpie-smoke@dragonflymedia.org` to match Magpie's `synthetic_smoke.py`.
 - **Config gotchas:** `ISSUER` must exactly equal the public URL (it is baked into every issued
   token); `OIDC_PRIVATE_KEY` is a single line with `\n` escapes; `server/.env` must be LF-ended.
   Changing ISSUER breaks verification in every app server until config is updated — coordinate with

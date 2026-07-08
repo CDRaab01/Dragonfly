@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     # aud="cross-app") for a caller-supplied throwaway email — small, auditable, and revocable
     # independently of the real OIDC client list. Empty ⇒ the endpoint is disabled (404).
     smoke_clients: str = ""
+    # F2 fix: the throwaway email(s) the smoke client is *allowed* to mint a token for
+    # (space/comma-separated). WITHOUT this an authenticated smoke credential could mint an
+    # aud="suite" token for ANY email → impersonate any account on any suite app. Fail-closed:
+    # empty ⇒ every subject is rejected (better a broken smoke than an impersonation oracle).
+    # Non-secret, so it belongs in the compose `environment:` block, not server/.env.
+    smoke_subject_emails: str = ""
 
     # Test-suite escape hatch (see database.py / Cookbook's note): NullPool avoids binding pooled
     # asyncpg connections to a dead per-test event loop.

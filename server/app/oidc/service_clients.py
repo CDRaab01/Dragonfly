@@ -23,8 +23,14 @@ def _parse(raw: str) -> dict[str, str]:
     return clients
 
 
+def _parse_emails(raw: str) -> set[str]:
+    """Space/comma-separated email allowlist, normalized to lowercase for case-insensitive match."""
+    return {e.strip().lower() for e in raw.replace(",", " ").split() if e.strip()}
+
+
 _CLIENTS: dict[str, str] = _parse(settings.cross_app_clients)
 _SMOKE_CLIENTS: dict[str, str] = _parse(settings.smoke_clients)
+_SMOKE_SUBJECTS: set[str] = _parse_emails(settings.smoke_subject_emails)
 
 
 def cross_app_enabled() -> bool:
@@ -56,3 +62,10 @@ def verify_smoke_client(client_id: str, client_secret: str) -> bool:
         secrets.compare_digest(client_secret, client_secret)
         return False
     return secrets.compare_digest(client_secret, expected)
+
+
+def smoke_subject_allowed(email: str) -> bool:
+    """F2: the smoke credential may only mint a suite token for a pre-designated throwaway email,
+    never an arbitrary account. Fail-closed — an empty allowlist denies everyone, so a
+    misconfigured deploy breaks the smoke test rather than reopening the impersonation hole."""
+    return email.strip().lower() in _SMOKE_SUBJECTS

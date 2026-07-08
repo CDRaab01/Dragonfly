@@ -31,7 +31,7 @@ staying auditable.
 | `app/routers/oidc.py` | `/.well-known/*`, `/authorize` (session-gated → `/login` HTML form), `/token` (single-use 60 s codes), `/userinfo`, `/login`, `/logout` |
 | `app/routers/accounts.py` | `/register` (invite-gated via `REGISTRATION_INVITE_CODE` — closed in prod), account surface |
 | `app/routers/cross_app.py` | `POST /cross-app/token` — client-credentials → short-lived RS256 token `aud="cross-app"`; 404 until `CROSS_APP_CLIENTS` is set |
-| `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for a caller-supplied throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set |
+| `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for an **allowlisted** throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set; the subject must be in `SMOKE_SUBJECT_EMAILS` (fail-closed, F2) else 403 — without the allowlist a valid smoke credential could impersonate any account on any suite app |
 | `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens, sessions, users |
 
 ### Config gotchas (each has bitten)

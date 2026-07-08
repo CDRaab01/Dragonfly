@@ -39,6 +39,11 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dragonfly_id}:${POSTGRES_PASSWORD:-dragonfly_id}@db:5432/${POSTGRES_DB:-dragonfly_id}
       GIT_SHA: ${GIT_SHA:-unknown}
       BUILT_AT: ${BUILT_AT:-unknown}
+      # F2: the smoke-token subject allowlist (fail-closed). Non-secret required config lives here,
+      # not in env_file (compose doesn't re-read a changed env_file on redeploy). Without this the
+      # smoke credential could mint an aud="suite" token for any email. Must match Magpie's
+      # SMOKE_EMAIL (scripts/synthetic_smoke.py default) or the Magpie deploy smoke fails.
+      SMOKE_SUBJECT_EMAILS: ${SMOKE_SUBJECT_EMAILS:-magpie-smoke@dragonflymedia.org}
     depends_on:
       db:
         condition: service_healthy

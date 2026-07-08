@@ -14,6 +14,8 @@ os.environ.setdefault("HSTS_ENABLED", "false")
 os.environ.setdefault("CROSS_APP_CLIENTS", "testclient:testsecret")
 # Enable the synthetic-smoke token endpoint with a known test client (Magpie CLAUDE.md §9).
 os.environ.setdefault("SMOKE_CLIENTS", "smoketestclient:smoketestsecret")
+# F2: the smoke subject-email allowlist (fail-closed) — the emails the endpoint tests mint for.
+os.environ.setdefault("SMOKE_SUBJECT_EMAILS", "smoke@example.com u@e.com")
 
 import pytest
 import pytest_asyncio
