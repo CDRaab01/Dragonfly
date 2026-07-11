@@ -22,12 +22,21 @@ cross-app architecture is hub territory (see also [BROKER.md](BROKER.md) for con
 6. **Nutrition is the shared language, Plate is the hub of it.** App-to-app links route
    through Plate where the payload is food/macros; Spotter↔Cookbook direct links are a
    non-goal (topology creep toward N×N).
+7. **Federated AI awareness (owner-approved 2026-07-11).** An app's AI surface may consume
+   another app's aggregates as coach/chat context, under extra discipline: every link is a
+   **named use case** registered in this file (no "read everything just in case"); foreign data
+   enters prompts **labeled by source** ("reported by Spotter") and its absence means "the source
+   didn't say", never a zero; **no transitive re-export** (a consumer never re-serves another
+   app's data onward); and the **3-source rule** — a use case needing three or more apps at once
+   is digest territory, not per-app awareness. (A central suite assistant was designed and
+   deliberately deferred in favor of these links; see the owner discussion 2026-07-11.)
 
 ## Surfaces in production (2026-07-03)
 
 | Provider | Surface | Consumer | Purpose |
 |---|---|---|---|
 | Spotter | `GET /workouts?date=` | Plate | Training-day intake bump + coach framing |
+| Spotter | `GET /workouts?start=&end=` (range form, 2026-07-11) | Plate | Training-week summary → coach's weekly framing (federated-awareness Link B); the range read the future digest was scoped around |
 | Plate | `GET /recipes/export` | Cookbook | One-time/ongoing recipe import |
 | Plate | `POST /cross-app/resolve-foods` | Cookbook | Ingredient → nutrition resolution |
 | Plate | `POST /cross-app/log-recipe` | Cookbook | "I made this" → Plate food diary (user-initiated write) |
