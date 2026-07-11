@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 # The suite's identity provider (BROKER.md Phase 2). OIDC via Authlib; argon2id password hashing.
 dependencies = [
     "fastapi==0.139.0",
-    "uvicorn[standard]==0.50.0",
+    "uvicorn[standard]==0.51.0",
     "sqlalchemy[asyncio]==2.0.51",
     "alembic==1.18.5",
     "asyncpg==0.31.0",
@@ -33,7 +33,7 @@ dev = [
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
     "httpx==0.28.1",
-    "ruff==0.15.20",
+    "ruff==0.15.21",
 ]
 
 [tool.hatch.build.targets.wheel]
