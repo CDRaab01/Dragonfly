@@ -38,6 +38,8 @@ cross-app architecture is hub territory (see also [BROKER.md](BROKER.md) for con
 | Spotter | `GET /workouts?date=` | Plate | Training-day intake bump + coach framing |
 | Spotter | `GET /workouts?start=&end=` (range form, 2026-07-11) | Plate | Training-week summary → coach's weekly framing (federated-awareness Link B); the range read the future digest was scoped around |
 | Cookbook | `GET /cross-app/cooked?start=&end=` (RS256-only, 2026-07-11) | Magpie | Cooked-meal counts → budget coach's dining lever (federated-awareness Link A); Cookbook's first provider surface |
+| Cookbook | `GET /cross-app/plan?date=` (RS256-only, 2026-07-11) | Plate | Tonight's planned meals → coach paces the day around them (federated-awareness Link E) |
+| Plate | `GET /cross-app/remaining?date=` (2026-07-11) | Cookbook | Macros left today → recipe 'fits today' badge (federated-awareness Link F) |
 | Plate | `GET /recipes/export` | Cookbook | One-time/ongoing recipe import |
 | Plate | `POST /cross-app/resolve-foods` | Cookbook | Ingredient → nutrition resolution |
 | Plate | `POST /cross-app/log-recipe` | Cookbook | "I made this" → Plate food diary (user-initiated write) |
