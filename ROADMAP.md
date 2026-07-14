@@ -25,6 +25,13 @@ the round's last commit. The hub's round (host Tier W3) rolls up items already i
    surface (host Tier W1).
 7. Version 0.1.0 → **1.0.0** at the gate — deliberately last among the six apps.
 
+**Gap review 2026-07-14 (host ROADMAP3 additions):** the suite bar gained accessibility (#11)
+and biometric-where-warranted (#12); two suite tracks land in this repo's court — **retention
+nudges** (Tier W2b: the product layer on the shared ntfy pipeline — per-app opt-in reminder
+settings, quiet hours) and the **Pulse widget family** (Tier W4: hub suite-status widget +
+shared Glance theming primitives in Pulse). Cheap hub-side add: **static app shortcuts**
+(long-press icon → "Check all updates" / "Suite status").
+
 ## Finish what's started
 
 1. ~~Set `DRAGONFLY_DIR`~~ — done 2026-07-03; push-to-deploy verified live.
