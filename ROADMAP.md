@@ -4,6 +4,27 @@ Covers both deliverables: the hub app (`android/`) and dragonfly-id (`server/`).
 suite infrastructure — its roadmap is mostly about making the suite self-observing and finishing
 what BROKER.md started.
 
+## Road to 1.0 (suite pivot, 2026-07-13) — the hub becomes the suite's face
+
+The suite entered its **1.0 polish round** (host-level ROADMAP3, C:\Code): every app must pass a
+shared bar (onboarding, designed states, motion + dark/light parity, defined offline behavior,
+no dead settings, on-device pass, gating baselines, icon, truthful docs), `versionName` 1.0.0 as
+the round's last commit. The hub's round (host Tier W3) rolls up items already in this file:
+
+1. **On-device pass first** — the hub has never run on the phone (see CLAUDE.md); nothing else
+   in this list is trustworthy until PackageInstaller/notifications/status render are verified.
+2. **Delete the dead self-host update source** ("Finish what's started" #2 — decision: GitHub
+   Releases has proven sufficient; delete beats build).
+3. **Update flow polish** (fun tier #2): background download-then-notify, "changed since
+   installed" release-notes rollup.
+4. **dragonfly-id self-service** (hardening #2): password change + session list/revoke — the
+   feature a paid product would have, and the one that matters the day a phone is lost.
+5. **Magpie tile upgrade**: net-this-month via `/cross-app/summary` (Magpie ROADMAP #22).
+6. This repo also hosts the two suite-wide wow tracks: the **shared push pipeline** (fun tier
+   #3, ntfy — Hawksnest's V1 already deployed the backend) and the **suite weekly digest**
+   surface (host Tier W1).
+7. Version 0.1.0 → **1.0.0** at the gate — deliberately last among the six apps.
+
 ## Finish what's started
 
 1. ~~Set `DRAGONFLY_DIR`~~ — done 2026-07-03; push-to-deploy verified live.
@@ -32,10 +53,10 @@ what BROKER.md started.
 
 ## Hub app (the fun tier)
 
-1. **v2 dashboard — live suite status.** Already sketched in CLAUDE.md as v2: the registry
-   knows every app; add each backend's `/health` + `/version` + latest-release row and the hub
-   becomes the "is my world green" surface. Server checks belong in a tiny poller (or reuse
-   uptime-kuma's API) rather than the phone hammering five backends.
+1. ✓ **v2 dashboard — live suite status — SHIPPED 2026-07-04** (`status/` package:
+   `StatusResolver` + parallel `StatusProber`, Home banner → Suite status screen, grouped
+   Suite/Media/Automation; Magpie onboarded 2026-07-08). On-device render/tap-through still
+   owed (Road to 1.0 #1); Hawksnest's URL is still the guessed `:30080`.
 2. **Update flow polish:** background download-then-notify (tap = straight to the install
    prompt), and per-app release notes already render — add "changed since installed" when
    multiple releases behind.

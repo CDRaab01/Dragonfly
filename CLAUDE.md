@@ -93,8 +93,8 @@ the original plan to copy Hawksnest's `themes.css` is superseded.
   actions, **info** blue = version readouts, **ok** green = up-to-date/success,
   **warn** amber = update available/attention.
 - Keep AGP/Kotlin/Compose versions aligned with Pulse's `gradle/libs.versions.toml` — composite
-  builds only stay binary-compatible when they match (currently AGP 8.5.0 / Kotlin 2.0.0 /
-  BOM 2024.06.00).
+  builds only stay binary-compatible when they match (currently AGP 9.1.1 / Kotlin 2.2.10 /
+  BOM 2026.06.01).
 
 ## Permissions (manifest)
 - `INTERNET`
