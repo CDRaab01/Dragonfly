@@ -313,7 +313,10 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   (auth-code, **PKCE S256 mandatory**, strict exact redirect-URI match, session-gated → `/login`),
   `/token` (auth code + rotating refresh; codes single-use, 60 s), `/userinfo`, `/register`
   (invite-gated via `REGISTRATION_INVITE_CODE` — registration is closed in prod), `/login`
-  (HTML form + session cookie), `/logout`, `POST /cross-app/token` (confidential
+  (HTML form + session cookie), `/logout`, `GET /account` + `POST /account/password` +
+  `POST /account/sessions/revoke[-all]` (session-cookie-gated self-service: password change +
+  active-session list/revoke; sessions keyed by the refresh token's surrogate `id`),
+  `POST /cross-app/token` (confidential
   client_credentials → short-lived RS256 cross-app token, `aud="cross-app"`; enabled by
   `CROSS_APP_CLIENTS`, disabled/404 when unset — ROADMAP T2 #5, see [CROSS-APP.md](CROSS-APP.md)).
 - **Tokens:** RS256 via Authlib JOSE. Access tokens `aud=suite` (what app servers verify);

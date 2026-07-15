@@ -17,7 +17,7 @@ zero friction to date):
 
 ## server/ — dragonfly-id
 
-Small on purpose (6 test files, 1 consolidated migration): an identity server earns trust by
+Small on purpose (7 test files, 2 migrations): an identity server earns trust by
 staying auditable.
 
 ### Module map
@@ -29,10 +29,11 @@ staying auditable.
 | `app/oidc/clients.py` | Static public clients: `spotter`, `plate`, `cookbook`, `dragonfly`, `magpie` (+ `localdev`); redirect URIs `<package>:/oauth2redirect`; PKCE S256 mandatory, exact redirect match |
 | `app/oidc/service_clients.py` | Confidential clients for cross-app tokens (`CROSS_APP_CLIENTS` env, `client_id:secret` list) and for synthetic-smoke tokens (`SMOKE_CLIENTS`, same list shape, deliberately a separate dict so one credential type can never mint the other's token) |
 | `app/routers/oidc.py` | `/.well-known/*`, `/authorize` (session-gated → `/login` HTML form), `/token` (single-use 60 s codes), `/userinfo`, `/login`, `/logout` |
-| `app/routers/accounts.py` | `/register` (invite-gated via `REGISTRATION_INVITE_CODE` — closed in prod), account surface |
+| `app/routers/accounts.py` | `/register` (invite-gated via `REGISTRATION_INVITE_CODE` — closed in prod) + `/login`/`/logout` HTML session surface |
+| `app/routers/account.py` | Self-service (session-cookie-gated): `GET /account` page, `POST /account/password` (change), `POST /account/sessions/revoke[-all]` — active-session list + revoke, referenced by the refresh token's surrogate `id` (never its value); revoke leans on `/token` already rejecting `revoked` tokens |
 | `app/routers/cross_app.py` | `POST /cross-app/token` — client-credentials → short-lived RS256 token `aud="cross-app"`; 404 until `CROSS_APP_CLIENTS` is set |
 | `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for an **allowlisted** throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set; the subject must be in `SMOKE_SUBJECT_EMAILS` (fail-closed, F2) else 403 — without the allowlist a valid smoke credential could impersonate any account on any suite app |
-| `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens, sessions, users |
+| `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens (with a surrogate `id` for revoke handles), users |
 
 ### Config gotchas (each has bitten)
 

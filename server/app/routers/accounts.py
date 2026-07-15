@@ -75,6 +75,7 @@ def _login_page(next_url: str, error: str | None = None) -> str:
 <button type="submit" style="padding:.6rem 1rem">Sign in</button>
 </form>
 <p style="margin-top:1rem"><a href="/register?next={escape(next_url)}">Create an account</a></p>
+<p style="margin-top:.25rem"><a href="/account">Manage your account</a></p>
 </body></html>"""
 
 

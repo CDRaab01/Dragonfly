@@ -17,8 +17,10 @@ the round's last commit. The hub's round (host Tier W3) rolls up items already i
    Releases has proven sufficient; delete beats build).
 3. **Update flow polish** (fun tier #2): background download-then-notify, "changed since
    installed" release-notes rollup.
-4. **dragonfly-id self-service** (hardening #2): password change + session list/revoke — the
-   feature a paid product would have, and the one that matters the day a phone is lost.
+4. ✓ **dragonfly-id self-service** (hardening #2) — DONE 2026-07-15. Session-cookie-gated
+   `/account` page: password change + active-session list/revoke (individually or "sign out of
+   all apps"). Revoke leans on `/token` already rejecting `revoked` tokens; sessions are keyed by
+   a new surrogate `id` on the refresh token (migration `0002`), never the secret value.
 5. **Magpie tile upgrade**: net-this-month via `/cross-app/summary` (Magpie ROADMAP #22).
 6. This repo also hosts the two suite-wide wow tracks: the **shared push pipeline** (fun tier
    #3, ntfy — Hawksnest's V1 already deployed the backend) and the **suite weekly digest**
@@ -49,11 +51,12 @@ shared Glance theming primitives in Pulse). Cheap hub-side add: **static app sho
    with new, keep old until expiry), then write the rotation runbook. Currently
    `OIDC_PRIVATE_KEY` is a single static key in `.env` — rotation today would be a
    flag-day outage across three apps.
-2. **Self-service account surface.** The provider has login/register/logout and nothing else.
-   Password change + active-session/refresh-token list + revoke — small HTML pages like
-   `/login`, or a card in the hub app. Matters the day a phone is lost.
+2. ✓ **Self-service account surface** — DONE 2026-07-15. `GET /account` (session-cookie-gated
+   HTML): password change + active-session list/revoke + revoke-all. Reachable via "Manage your
+   account" on the login page. A hub-app card (deep-link to `/account`) is a possible follow-up.
 3. **Refresh-token hygiene:** a scheduled prune of expired/rotated rows, and alerting on
-   anomalous issuance (uptime-kuma can watch a `/health`-style stats endpoint).
+   anomalous issuance (uptime-kuma can watch a `/health`-style stats endpoint). *(Now that
+   revoke exists, the `revoked=True` rows accumulate — the prune is the natural next step.)*
 4. **Backups:** the identity DB is now the most important 20 MB on the host — it's in the
    suite-wide backup item (host ROADMAP Tier 1 #1) but worth naming here: losing it strands
    every app's SSO link.
