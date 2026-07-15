@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 @Serializable
 data class GitHubRelease(
@@ -27,6 +28,15 @@ interface GitHubApi {
         @Path("owner") owner: String,
         @Path("repo") repo: String,
     ): GitHubRelease
+
+    /** Releases newest-first — used to roll up "what changed since installed" for an app several
+     *  versions behind. One page is plenty for a personal suite. */
+    @GET("repos/{owner}/{repo}/releases")
+    suspend fun releases(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 30,
+    ): List<GitHubRelease>
 }
 
 /**

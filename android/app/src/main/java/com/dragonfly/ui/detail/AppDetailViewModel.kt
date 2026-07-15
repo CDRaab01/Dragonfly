@@ -9,6 +9,7 @@ import com.dragonfly.history.UpdateRecord
 import com.dragonfly.registry.AppRegistry
 import com.dragonfly.settings.SettingsRepository
 import com.dragonfly.settings.UpdateSource
+import com.dragonfly.update.AppState
 import com.dragonfly.update.AppStatus
 import com.dragonfly.update.UpdateFlowManager
 import com.dragonfly.update.UpdateRepository
@@ -31,6 +32,8 @@ data class DetailUiState(
     val sourceOverride: UpdateSource? = null,
     val history: List<UpdateRecord> = emptyList(),
     val phase: UpdateFlowManager.Phase = UpdateFlowManager.Phase(),
+    /** Rolled-up notes across every release newer than the installed build; null = show latest only. */
+    val changesSince: String? = null,
 )
 
 @HiltViewModel
@@ -55,6 +58,8 @@ class AppDetailViewModel @Inject constructor(
     private val _needsInstallPermission = MutableStateFlow(false)
     val needsInstallPermission = _needsInstallPermission.asStateFlow()
 
+    private val changesSince = MutableStateFlow<String?>(null)
+
     val uiState: StateFlow<DetailUiState> = combine(
         status,
         checking,
@@ -63,7 +68,8 @@ class AppDetailViewModel @Inject constructor(
         flowManager.phases.map { it[app.key] ?: UpdateFlowManager.Phase() },
     ) { appStatus, isChecking, override, history, phase ->
         DetailUiState(appStatus, isChecking, override, history, phase)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
+    }.combine(changesSince) { s, changes -> s.copy(changesSince = changes) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
 
     init {
         check()
@@ -79,7 +85,15 @@ class AppDetailViewModel @Inject constructor(
         viewModelScope.launch {
             checking.value = true
             try {
-                status.value = updateRepository.check(app)
+                val result = updateRepository.check(app)
+                status.value = result
+                // Only worth a second call (a releases-list fetch) when there's actually an update
+                // to roll up; otherwise the single latest note the check already carries is enough.
+                changesSince.value = if (result.state == AppState.UPDATE_AVAILABLE) {
+                    updateRepository.changesSinceInstalled(app, result.installedVersionName)
+                } else {
+                    null
+                }
             } catch (e: Exception) {
                 _message.value = "Check failed: ${e.message ?: "network error"}"
             } finally {

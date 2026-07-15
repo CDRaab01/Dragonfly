@@ -11,12 +11,20 @@ shared bar (onboarding, designed states, motion + dark/light parity, defined off
 no dead settings, on-device pass, gating baselines, icon, truthful docs), `versionName` 1.0.0 as
 the round's last commit. The hub's round (host Tier W3) rolls up items already in this file:
 
-1. **On-device pass first** — the hub has never run on the phone (see CLAUDE.md); nothing else
-   in this list is trustworthy until PackageInstaller/notifications/status render are verified.
+1. ✓ **On-device pass** — DONE 2026-07-15. Verified on a real phone (v0.1.45): Home dashboard
+   renders, Suite-status screen renders + tap-through (backends UP with version·commit·deploy-time),
+   correct installed→latest readouts, and — the never-before-run path — the full **update/install
+   flow** (GitHub release → download → SHA-256 verify → PackageInstaller system prompt → install)
+   worked end-to-end updating Spotter. Notifications not yet exercised on-device.
 2. **Delete the dead self-host update source** ("Finish what's started" #2 — decision: GitHub
-   Releases has proven sufficient; delete beats build).
-3. **Update flow polish** (fun tier #2): background download-then-notify, "changed since
-   installed" release-notes rollup.
+   Releases has proven sufficient; delete beats build). **Confirmed safe 2026-07-15:** no sibling
+   reads `selfhost_base_url` from the config broker (consumers' `SuiteConfigReader` reads only
+   `server_base_url`), so the cross-app ContentProvider contract is unaffected.
+3. **Update flow polish** (fun tier #2): ✓ **"changed since installed" release-notes rollup DONE
+   2026-07-15** — App detail now rolls up every release's notes since your installed build (matched
+   by versionName→tag; `ReleaseResolver.notesSinceInstalled`), not just the latest, headed "Changes
+   since <version>". Still open: background download-then-notify (tap the notification → straight to
+   the install prompt).
 4. ✓ **dragonfly-id self-service** (hardening #2) — DONE 2026-07-15. Session-cookie-gated
    `/account` page: password change + active-session list/revoke (individually or "sign out of
    all apps"). Revoke leans on `/token` already rejecting `revoked` tokens; sessions are keyed by

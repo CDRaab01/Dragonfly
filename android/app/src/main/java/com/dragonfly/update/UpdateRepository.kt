@@ -123,6 +123,20 @@ class UpdateRepository @Inject constructor(
             usesGitHubApiDownload = usePat,
         )
     }
+
+    /**
+     * The rolled-up "what changed since your installed version" notes for a GitHub app that is
+     * several releases behind. Fetches one page of releases and rolls up every release newer than
+     * the installed one (see [ReleaseResolver.notesSinceInstalled]). Best-effort — returns null on
+     * any failure or for a self-host-only app, so the UI just falls back to the latest notes.
+     */
+    suspend fun changesSinceInstalled(app: ManagedApp, installedVersionName: String?): String? {
+        val repo = app.githubRepo ?: return null
+        return runCatching {
+            val (owner, name) = repo.split('/', limit = 2)
+            ReleaseResolver.notesSinceInstalled(gitHubApi.releases(owner, name), installedVersionName)
+        }.getOrNull()
+    }
 }
 
 private fun ManifestEntry.toLatest() = LatestRelease(

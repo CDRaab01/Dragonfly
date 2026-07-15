@@ -181,12 +181,21 @@ fun AppDetailScreen(
                 }
             }
 
-            val changelog = state.status?.latest?.changelog
+            // When an update is available and we're several releases behind, `changesSince` rolls up
+            // every release's notes since the installed build; otherwise fall back to the latest note.
+            val rollup = state.changesSince
+            val changelog = rollup ?: state.status?.latest?.changelog
             if (changelog != null) {
+                val installedName = state.status?.installedVersionName
+                val header = if (rollup != null && installedName != null) {
+                    "Changes since $installedName"
+                } else {
+                    "What's new"
+                }
                 item {
                     PanelCard(Modifier.fillMaxWidth()) {
                         Column {
-                            SectionHeader("What's new")
+                            SectionHeader(header)
                             Spacer(Modifier.height(8.dp))
                             Text(changelog, style = MaterialTheme.typography.bodyMedium)
                         }

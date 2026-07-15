@@ -1,12 +1,14 @@
 package com.dragonfly.update
 
 import com.dragonfly.net.GitHubAsset
+import com.dragonfly.net.GitHubRelease
 import com.dragonfly.net.downloadUrl
 import com.dragonfly.settings.UpdateSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ReleaseResolverTest {
 
@@ -94,5 +96,72 @@ class ReleaseResolverTest {
         assertEquals(AppState.UPDATE_AVAILABLE, ReleaseResolver.stateFor(4, latest(5)))
         assertEquals(AppState.UP_TO_DATE, ReleaseResolver.stateFor(5, latest(5)))
         assertEquals(AppState.UP_TO_DATE, ReleaseResolver.stateFor(6, latest(5)))
+    }
+
+    // --- notes-since-installed rollup ---
+
+    private fun rel(tag: String, body: String?, name: String? = null) =
+        GitHubRelease(tagName = tag, name = name, body = body)
+
+    // Newest-first, like the GitHub API returns them.
+    private val releases = listOf(
+        rel("v1.4.2", "Fixed the crash"),
+        rel("v1.4.1", "Faster sync"),
+        rel("v1.4.0", "New dashboard"),
+        rel("v1.3.9", "Old news"),
+    )
+
+    @Test
+    fun `rolls up every release newer than installed, newest first`() {
+        val notes = ReleaseResolver.notesSinceInstalled(releases, "1.4.0")
+        assertEquals(
+            "v1.4.2\nFixed the crash\n\nv1.4.1\nFaster sync",
+            notes,
+        )
+    }
+
+    @Test
+    fun `excludes the installed release and anything older`() {
+        val notes = ReleaseResolver.notesSinceInstalled(releases, "1.4.0")!!
+        assertTrue("New dashboard" !in notes) // installed
+        assertTrue("Old news" !in notes) // older than installed
+    }
+
+    @Test
+    fun `installed already on latest yields nothing`() {
+        assertNull(ReleaseResolver.notesSinceInstalled(releases, "1.4.2"))
+    }
+
+    @Test
+    fun `unknown installed version falls back to the latest release notes only`() {
+        // A local build whose versionName matches no release tag.
+        val notes = ReleaseResolver.notesSinceInstalled(releases, "9.9.9-debug")
+        assertEquals("v1.4.2\nFixed the crash", notes)
+    }
+
+    @Test
+    fun `prefers release name over tag as the header when present`() {
+        val named = listOf(
+            rel("v2.0.0", "Big rewrite", name = "2.0 — Big Bang"),
+            rel("v1.9.0", "prior"),
+        )
+        val notes = ReleaseResolver.notesSinceInstalled(named, "1.9.0")
+        assertEquals("2.0 — Big Bang\nBig rewrite", notes)
+    }
+
+    @Test
+    fun `skips releases with blank bodies`() {
+        val withBlanks = listOf(
+            rel("v3.2", "Real notes"),
+            rel("v3.1", "   "),
+            rel("v3.0", null),
+        )
+        val notes = ReleaseResolver.notesSinceInstalled(withBlanks, "3.0")
+        assertEquals("v3.2\nReal notes", notes)
+    }
+
+    @Test
+    fun `empty release list yields null`() {
+        assertNull(ReleaseResolver.notesSinceInstalled(emptyList(), "1.0.0"))
     }
 }
