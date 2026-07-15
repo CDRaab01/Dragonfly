@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dragonfly</string>
+    <string name="shortcut_status_short">Suite status</string>
+    <string name="shortcut_status_long">Suite status</string>
+    <string name="shortcut_check_short">Check updates</string>
+    <string name="shortcut_check_long">Check for updates</string>
 </resources>

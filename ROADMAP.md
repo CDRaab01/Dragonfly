@@ -41,8 +41,10 @@ the round's last commit. The hub's round (host Tier W3) rolls up items already i
 and biometric-where-warranted (#12); two suite tracks land in this repo's court — **retention
 nudges** (Tier W2b: the product layer on the shared ntfy pipeline — per-app opt-in reminder
 settings, quiet hours) and the **Pulse widget family** (Tier W4: hub suite-status widget +
-shared Glance theming primitives in Pulse). Cheap hub-side add: **static app shortcuts**
-(long-press icon → "Check all updates" / "Suite status").
+shared Glance theming primitives in Pulse). ✓ **Static app shortcuts DONE 2026-07-15** —
+long-press the hub icon → "Check updates" (opens Home, which refreshes all apps) / "Suite status"
+(jumps to the status screen). `res/xml/shortcuts.xml` + a `dragonfly://shortcut/<target>` VIEW
+intent routed in `MainActivity`/`DragonflyNavGraph` (handles the singleTask warm re-launch too).
 
 ## Finish what's started
 

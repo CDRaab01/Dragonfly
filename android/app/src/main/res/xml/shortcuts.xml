@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher shortcuts (long-press the app icon). Each opens MainActivity with a
+     dragonfly://shortcut/<target> URI that the activity routes on start (see MainActivity). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="status"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_status_short"
+        android:shortcutLongLabel="@string/shortcut_status_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.dragonfly"
+            android:targetClass="com.dragonfly.MainActivity"
+            android:data="dragonfly://shortcut/status" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="check"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_check_short"
+        android:shortcutLongLabel="@string/shortcut_check_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.dragonfly"
+            android:targetClass="com.dragonfly.MainActivity"
+            android:data="dragonfly://shortcut/check" />
+    </shortcut>
+</shortcuts>
