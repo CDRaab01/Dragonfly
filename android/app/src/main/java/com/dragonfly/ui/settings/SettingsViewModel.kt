@@ -6,7 +6,6 @@ import com.dragonfly.settings.CheckInterval
 import com.dragonfly.settings.PatStore
 import com.dragonfly.settings.SettingsRepository
 import com.dragonfly.settings.SettingsSnapshot
-import com.dragonfly.settings.UpdateSource
 import com.dragonfly.work.UpdateScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -31,14 +30,6 @@ class SettingsViewModel @Inject constructor(
     /** Whether a PAT is stored; the value itself is never echoed back to the UI. */
     private val _hasPat = MutableStateFlow(patStore.githubPat != null)
     val hasPat = _hasPat.asStateFlow()
-
-    fun setGlobalSource(source: UpdateSource) = viewModelScope.launch {
-        settingsRepository.setGlobalSource(source)
-    }
-
-    fun setSelfHostBaseUrl(url: String) = viewModelScope.launch {
-        settingsRepository.setSelfHostBaseUrl(url)
-    }
 
     /** Broker-managed server URL for one app; blank clears it (sibling falls back to its own). */
     fun setAppServerUrl(appKey: String, url: String) = viewModelScope.launch {

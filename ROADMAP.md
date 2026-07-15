@@ -16,10 +16,12 @@ the round's last commit. The hub's round (host Tier W3) rolls up items already i
    correct installed→latest readouts, and — the never-before-run path — the full **update/install
    flow** (GitHub release → download → SHA-256 verify → PackageInstaller system prompt → install)
    worked end-to-end updating Spotter. Notifications not yet exercised on-device.
-2. **Delete the dead self-host update source** ("Finish what's started" #2 — decision: GitHub
-   Releases has proven sufficient; delete beats build). **Confirmed safe 2026-07-15:** no sibling
-   reads `selfhost_base_url` from the config broker (consumers' `SuiteConfigReader` reads only
-   `server_base_url`), so the cross-app ContentProvider contract is unaffected.
+2. ✓ **Delete the dead self-host update source** — DONE 2026-07-15. Removed `UpdateSource`,
+   the manifest-fetch path (`ManifestEntry`/`parseManifest`/`fetchManifestIfNeeded`), the
+   per-app + global source selection (Settings + App-detail toggles), `selfHostBaseUrl`, and the
+   broker's `selfhost_base_url` row — the hub updates from GitHub Releases, full stop. The GitHub
+   fetch/download/verify/install path is untouched. Cross-app safe: no sibling read
+   `selfhost_base_url` (`SuiteConfigReader` reads only `server_base_url`).
 3. **Update flow polish** (fun tier #2): ✓ **"changed since installed" release-notes rollup DONE
    2026-07-15** — App detail now rolls up every release's notes since your installed build (matched
    by versionName→tag; `ReleaseResolver.notesSinceInstalled`), not just the latest, headed "Changes

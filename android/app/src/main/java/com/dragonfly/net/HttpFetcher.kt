@@ -9,9 +9,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
- * Small-body GETs at arbitrary URLs (self-host manifest.json, GitHub version.json assets) —
- * everything Retrofit's fixed base URL doesn't fit. Uses the same client (and so the same
- * GitHub auth interceptor) as the rest of the app.
+ * Small-body GETs at arbitrary URLs (GitHub version.json assets) — everything Retrofit's fixed
+ * base URL doesn't fit. Uses the same client (and so the same GitHub auth interceptor) as the
+ * rest of the app.
  */
 @Singleton
 class HttpFetcher @Inject constructor(

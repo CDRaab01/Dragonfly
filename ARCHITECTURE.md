@@ -53,8 +53,8 @@ staying auditable.
 | Package | Responsibility |
 |---|---|
 | `registry/` | `AppRegistry` — the six managed apps (key/package/repo), single source of truth. Every package here must also be in the manifest `<queries>` block or version reads silently fail |
-| `settings/` | DataStore settings (source selection, self-host URL, auto-check interval, Wi-Fi-only) + `PatStore` (GitHub PAT, EncryptedSharedPreferences, attached only to `api.github.com`) |
-| `net/` | Retrofit `GitHubApi`, `HttpFetcher` (manifest/version.json GETs), `NetworkStatus` |
+| `settings/` | DataStore settings (auto-check interval, Wi-Fi-only, per-app broker server URL) + `PatStore` (GitHub PAT, EncryptedSharedPreferences, attached only to `api.github.com`) |
+| `net/` | Retrofit `GitHubApi`, `HttpFetcher` (version.json GETs), `NetworkStatus` |
 | `update/` | The update pipeline: `ReleaseResolver` (pure, unit-tested: parse `version.json`, pick assets, diff versionCodes), `UpdateRepository`, `UpdateFlowManager` (download → verify → install phases), `InstalledAppsDataSource` |
 | `install/` | `ApkDownloader` (OkHttp streaming; **SHA-256 gate deletes on mismatch — mandatory**), `ApkInstaller` (PackageInstaller session → system prompt), `InstallResultReceiver`/`InstallEventBus` |
 | `history/` | Update history (JSON in DataStore, capped 50; Room deliberately rejected) |
@@ -75,7 +75,7 @@ device-verified. Be equally honest in yours.
 
 - versionCode (epoch minutes) is the only comparison field; `versionName`/tags are display-only.
 - A release without `version.json` surfaces as "fix the release", never guessed from the tag.
-- SHA-256 verification is mandatory for both sources (GitHub + future self-host manifest).
+- SHA-256 verification is mandatory (the GitHub release's `version.json` publishes the hash).
 - No silent installs — one system-prompt tap per update is the accepted cost (rejected:
   device-owner/root).
 

@@ -3,7 +3,6 @@ package com.dragonfly.update
 import com.dragonfly.net.GitHubAsset
 import com.dragonfly.net.GitHubRelease
 import com.dragonfly.net.downloadUrl
-import com.dragonfly.settings.UpdateSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -37,25 +36,6 @@ class ReleaseResolverTest {
         }
     }
 
-    // --- manifest.json (schema from CLAUDE.md) ---
-
-    @Test
-    fun `parses the documented manifest schema`() {
-        val manifest = ReleaseResolver.parseManifest(
-            """
-            {
-              "spotter":   { "versionCode": 42, "versionName": "1.4.2", "apkUrl": "https://x/spotter.apk", "sha256": "aa", "minSdk": 26 },
-              "plate":     { "versionCode": 30, "versionName": "1.2.0", "apkUrl": "https://x/plate.apk", "sha256": "bb" }
-            }
-            """.trimIndent()
-        )
-        assertEquals(2, manifest.size)
-        assertEquals(42, manifest.getValue("spotter").versionCode)
-        assertEquals(26, manifest.getValue("spotter").minSdk)
-        assertEquals("https://x/plate.apk", manifest.getValue("plate").apkUrl)
-        assertNull(manifest.getValue("plate").minSdk)
-    }
-
     // --- asset selection ---
 
     private fun asset(name: String, id: Long = 1) =
@@ -87,7 +67,7 @@ class ReleaseResolverTest {
 
     // --- state diff ---
 
-    private fun latest(code: Long) = LatestRelease(code, "x", "https://x/app.apk", "aa", source = UpdateSource.GITHUB)
+    private fun latest(code: Long) = LatestRelease(code, "x", "https://x/app.apk", "aa")
 
     @Test
     fun `state matrix follows versionCode`() {

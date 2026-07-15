@@ -1,7 +1,6 @@
 package com.dragonfly.update
 
 import com.dragonfly.registry.ManagedApp
-import com.dragonfly.settings.UpdateSource
 import kotlinx.serialization.Serializable
 
 /**
@@ -17,24 +16,13 @@ data class VersionJson(
     val minSdk: Int? = null,
 )
 
-/** One app's entry in the self-hosted manifest.json. */
-@Serializable
-data class ManifestEntry(
-    val versionCode: Long,
-    val versionName: String,
-    val apkUrl: String,
-    val sha256: String,
-    val minSdk: Int? = null,
-)
-
-/** The newest release one source knows about, normalized across backends. */
+/** The newest GitHub release known for an app. */
 data class LatestRelease(
     val versionCode: Long,
     val versionName: String,
     val apkUrl: String,
     val sha256: String?,          // null only for a GitHub release missing the hash — warn
     val changelog: String? = null,
-    val source: UpdateSource,
     /** When downloading via the GitHub API asset endpoint (private repo + PAT). */
     val usesGitHubApiDownload: Boolean = false,
 )
@@ -48,6 +36,6 @@ data class AppStatus(
     val installedVersionName: String?,
     val latest: LatestRelease?,
     val state: AppState,
-    /** Human-readable problem/context line ("self-host unreachable — fell back to GitHub"). */
+    /** Human-readable problem/context line (e.g. "Release has no SHA-256 — integrity can't be verified"). */
     val note: String? = null,
 )

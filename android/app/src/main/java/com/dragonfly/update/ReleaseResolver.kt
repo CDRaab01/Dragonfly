@@ -13,8 +13,6 @@ object ReleaseResolver {
 
     fun parseVersionJson(text: String): VersionJson = json.decodeFromString(text)
 
-    fun parseManifest(text: String): Map<String, ManifestEntry> = json.decodeFromString(text)
-
     /** The installable APK asset: exactly one is expected; prefer the first `.apk` by name. */
     fun pickApkAsset(assets: List<GitHubAsset>): GitHubAsset? =
         assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }

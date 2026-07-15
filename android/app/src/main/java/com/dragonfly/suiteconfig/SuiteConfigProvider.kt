@@ -24,8 +24,8 @@ import kotlinx.coroutines.runBlocking
  *   content://com.dragonfly.suiteconfig/config           → every app's rows (keys prefixed
  *                                                          `{appKey}.`), for diagnostics
  *
- * Each row is (key, value). Keys: `server_base_url`, `selfhost_base_url`. An empty
- * `server_base_url` means the broker has no opinion — the sibling keeps its own configured URL.
+ * Each row is (key, value). Key: `server_base_url`. An empty `server_base_url` means the broker
+ * has no opinion — the sibling keeps its own configured URL.
  * Contract is additive-only; a breaking change bumps the path to `/v2/…`.
  */
 class SuiteConfigProvider : ContentProvider() {
@@ -66,7 +66,6 @@ class SuiteConfigProvider : ContentProvider() {
 
     private fun addApp(cursor: MatrixCursor, appKey: String, settings: SettingsSnapshot, prefix: String = "") {
         cursor.addRow(arrayOf(prefix + KEY_SERVER_BASE_URL, settings.serverUrlFor(appKey).orEmpty()))
-        cursor.addRow(arrayOf(prefix + KEY_SELFHOST_BASE_URL, settings.selfHostBaseUrl))
     }
 
     override fun getType(uri: Uri): String = "vnd.android.cursor.dir/vnd.$AUTHORITY.config"
@@ -81,7 +80,6 @@ class SuiteConfigProvider : ContentProvider() {
         const val COL_KEY = "key"
         const val COL_VALUE = "value"
         const val KEY_SERVER_BASE_URL = "server_base_url"
-        const val KEY_SELFHOST_BASE_URL = "selfhost_base_url"
 
         /** content://com.dragonfly.suiteconfig/config/{appKey} */
         fun configUri(appKey: String): Uri =

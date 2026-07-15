@@ -5,10 +5,10 @@ package com.dragonfly.registry
  * launches, version-checks, and updates — including Dragonfly itself (self-update path).
  */
 data class ManagedApp(
-    val key: String,          // stable id, also the self-host manifest key
+    val key: String,          // stable id (also the broker config key)
     val displayName: String,
     val packageName: String,
-    val githubRepo: String?,  // "owner/repo", null if self-host only
+    val githubRepo: String?,  // "owner/repo"; null ⇒ not updatable from GitHub Releases
     val isSelf: Boolean = false,
 )
 

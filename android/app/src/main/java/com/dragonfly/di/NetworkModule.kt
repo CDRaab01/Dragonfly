@@ -21,9 +21,9 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 object NetworkModule {
 
     /**
-     * One client for everything: GitHub API calls, manifest fetches, APK downloads. The auth
-     * interceptor attaches the PAT to github.com hosts only — it must never leak to the
-     * self-host or asset-CDN redirects off GitHub.
+     * One client for everything: GitHub API calls, version.json fetches, APK downloads. The auth
+     * interceptor attaches the PAT to github.com hosts only — it must never leak to asset-CDN
+     * redirects off GitHub.
      */
     @Provides
     @Singleton

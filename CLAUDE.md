@@ -32,10 +32,12 @@ Standard **system installer prompt** via `PackageInstaller` — no silent instal
 - Route users to grant "Install unknown apps" for Dragonfly on first update (deep-link to `Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES`).
 - Each update = one system-driven confirmation tap. Acceptable for personal sideload; silent install would need device owner (factory reset) or root — explicitly out of scope.
 
-## Update sources (configurable)
-Two backends, selectable per-app or globally in settings:
+## Update source: GitHub Releases
 
-### 1. GitHub Releases
+The hub updates every app from **GitHub Releases** — the only source. (A configurable self-hosted
+manifest source was designed but never stood up; it was removed 2026-07-15 per the "no dead
+settings" 1.0 bar — "delete beats build". See ROADMAP "Road to 1.0" #2.)
+
 - Poll `GET /repos/{owner}/{repo}/releases/latest` via GitHub REST API.
 - **Each sibling's release must include a `version.json` asset** (uploaded by its release CI) alongside the `.apk`:
 ```json
@@ -46,37 +48,22 @@ Two backends, selectable per-app or globally in settings:
 - Optional PAT stored in DataStore for private repos / rate limits.
 - If a release lacks `version.json`, surface it as "unknown version — fix the release" rather than guessing from the tag.
 
-### 2. Self-hosted (Dragonfly server via Tailscale Serve)
-- Fetch a JSON manifest over **HTTPS via Tailscale Serve** at the node's MagicDNS name, e.g. `https://dragonfly.<tailnet>.ts.net/manifest.json`. No cleartext exception needed; hostname survives IP changes.
-- Manifest schema (per app):
-```json
-{
-  "spotter":   { "versionCode": 42, "versionName": "1.4.2", "apkUrl": "…/spotter-1.4.2.apk", "sha256": "…", "minSdk": 26 },
-  "plate":     { "versionCode": 30, "versionName": "1.2.0", "apkUrl": "…", "sha256": "…" },
-  "cookbook":  { "versionCode": 11, "versionName": "0.9.1", "apkUrl": "…", "sha256": "…" },
-  "hawksnest": { "versionCode": 88, "versionName": "2.1.0", "apkUrl": "…", "sha256": "…" }
-}
-```
-- Reachability check first; fall back to GitHub source (or surface offline state) if the Tailscale host is unreachable.
-
 ## Version comparison
 - Compare installed `versionCode` (via `PackageManager.getPackageInfo`) against source's `versionCode` — available from both backends now that GitHub releases ship `version.json`.
 - `versionCode` is the source of truth; show `versionName` in UI.
 - Sibling apps must ship monotonically increasing `versionCode` — note this in each sibling's build config.
 
 ## Update flow
-1. Refresh: query each app's configured source for latest version (manual, on-launch, or WorkManager periodic per settings).
+1. Refresh: query each app's latest GitHub release (manual, on-launch, or WorkManager periodic per settings).
 2. Diff against installed versions → mark "Update available" (notification if from background check).
 3. On tap: download APK to app-scoped storage.
-4. **Verify SHA-256** against the manifest / `version.json` value — mandatory for both sources.
+4. **Verify SHA-256** against the `version.json` value — mandatory.
 5. Launch `PackageInstaller` session → system prompt → install.
 6. Record result (success/version/timestamp) in update history.
 
 ## Settings (shared)
 DataStore-backed, exposed to sibling apps as needed:
-- Update source selection (per-app override + global default)
 - GitHub PAT (encrypted — use `EncryptedSharedPreferences` or DataStore + Tink for secrets)
-- Self-host base URL (MagicDNS HTTPS)
 - Auto-check interval (manual / daily / on-launch)
 - Wi-Fi-only downloads toggle
 - **Sharing to siblings:** if siblings must read Dragonfly settings, expose via a signature-permission `ContentProvider` (all apps signed with the same key). Document the shared permission string here once chosen.
@@ -137,7 +124,7 @@ visibility) or version reads and launch intents silently fail.
   responsibility, a layer boundary, a cross-app/identity contract, or the data model. Silently-drifting
   docs are how Spotter's API docs said `/plans` for a round (ROADMAP2 T2 #5c).
 - No Play Store; sideload-only suite. Do not add Play-specific APIs.
-- SHA-256 verification is mandatory for both sources (self-host manifest and GitHub `version.json` both publish hashes).
+- SHA-256 verification is mandatory (the GitHub release's `version.json` publishes the hash).
 - Keep Dragonfly itself updatable via the same flow (self-update path) — it lists itself as a managed app.
 - The Dragonfly server may be down; every network path must degrade gracefully.
 
@@ -150,9 +137,9 @@ visibility) or version reads and launch intents silently fail.
 - [x] ~~Same signing key across suite?~~ → YES, required by the broker's signature permission;
       BROKER.md Phase 0 is the migration plan (secret suite key, guard-pin updates, one-time
       reinstall of all five apps).
-- [ ] Set up Tailscale Serve on the Dragonfly server + record the MagicDNS manifest URL here
-      (the app's Settings → Self-host base URL; empty = self-host source unavailable).
-- [ ] Who generates the self-host manifest — CI step vs manual.
+- [x] ~~Set up Tailscale Serve / self-host manifest source~~ — **dropped 2026-07-15.** The
+      self-host update source was never stood up; GitHub Releases proved sufficient, so the whole
+      configurable-source machinery was removed ("delete beats build", ROADMAP Road-to-1.0 #2).
 - [x] ~~`version.json` in releases~~ + [x] ~~automatic releases across the suite~~ — done
       2026-07-02. Every app now auto-publishes a signed GitHub Release (+ `version.json`:
       `{"versionCode", "versionName", "sha256", "minSdk"}`) on **any push to `main` that touches

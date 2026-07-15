@@ -39,7 +39,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.dragonfly.BuildConfig
 import com.dragonfly.registry.AppRegistry
 import com.dragonfly.settings.CheckInterval
-import com.dragonfly.settings.UpdateSource
 import design.pulse.ui.components.Caption
 import design.pulse.ui.components.DataText
 import design.pulse.ui.components.PanelCard
@@ -74,68 +73,6 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                PanelCard(Modifier.fillMaxWidth()) {
-                    Column {
-                        SectionHeader("Default update source")
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = settings.globalSource == UpdateSource.GITHUB,
-                                onClick = { viewModel.setGlobalSource(UpdateSource.GITHUB) },
-                                label = { Text("GitHub") },
-                            )
-                            FilterChip(
-                                selected = settings.globalSource == UpdateSource.SELF_HOST,
-                                onClick = { viewModel.setGlobalSource(UpdateSource.SELF_HOST) },
-                                label = { Text("Self-host") },
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Per-app overrides live on each app's detail screen.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            item {
-                var url by rememberSaveable(settings.selfHostBaseUrl) {
-                    mutableStateOf(settings.selfHostBaseUrl)
-                }
-                PanelCard(Modifier.fillMaxWidth()) {
-                    Column {
-                        SectionHeader("Self-host")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = url,
-                            onValueChange = { url = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Base URL") },
-                            placeholder = { Text("https://dragonfly.<tailnet>.ts.net") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Serves manifest.json + APKs over Tailscale Serve (HTTPS).",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (url != settings.selfHostBaseUrl) {
-                            Spacer(Modifier.height(8.dp))
-                            PulseButton(
-                                text = "Save",
-                                onClick = { viewModel.setSelfHostBaseUrl(url) },
-                                compact = true,
-                            )
-                        }
-                    }
-                }
-            }
-
             item {
                 PanelCard(Modifier.fillMaxWidth()) {
                     Column {

@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.dragonfly.history.UpdateHistoryStore
 import com.dragonfly.history.UpdateRecord
 import com.dragonfly.registry.AppRegistry
-import com.dragonfly.settings.SettingsRepository
-import com.dragonfly.settings.UpdateSource
 import com.dragonfly.update.AppState
 import com.dragonfly.update.AppStatus
 import com.dragonfly.update.UpdateFlowManager
@@ -28,8 +26,6 @@ import kotlinx.coroutines.launch
 data class DetailUiState(
     val status: AppStatus? = null,
     val checking: Boolean = false,
-    /** null = follows the global default. */
-    val sourceOverride: UpdateSource? = null,
     val history: List<UpdateRecord> = emptyList(),
     val phase: UpdateFlowManager.Phase = UpdateFlowManager.Phase(),
     /** Rolled-up notes across every release newer than the installed build; null = show latest only. */
@@ -40,7 +36,6 @@ data class DetailUiState(
 class AppDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val updateRepository: UpdateRepository,
-    private val settingsRepository: SettingsRepository,
     private val flowManager: UpdateFlowManager,
     historyStore: UpdateHistoryStore,
     @ApplicationContext private val context: Context,
@@ -63,11 +58,10 @@ class AppDetailViewModel @Inject constructor(
     val uiState: StateFlow<DetailUiState> = combine(
         status,
         checking,
-        settingsRepository.snapshots.map { it.perAppSource[app.key] },
         historyStore.records.map { records -> records.filter { it.appKey == app.key } },
         flowManager.phases.map { it[app.key] ?: UpdateFlowManager.Phase() },
-    ) { appStatus, isChecking, override, history, phase ->
-        DetailUiState(appStatus, isChecking, override, history, phase)
+    ) { appStatus, isChecking, history, phase ->
+        DetailUiState(appStatus, isChecking, history, phase)
     }.combine(changesSince) { s, changes -> s.copy(changesSince = changes) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailUiState())
 
@@ -99,13 +93,6 @@ class AppDetailViewModel @Inject constructor(
             } finally {
                 checking.value = false
             }
-        }
-    }
-
-    fun setSourceOverride(source: UpdateSource?) {
-        viewModelScope.launch {
-            settingsRepository.setAppSource(app.key, source)
-            check()
         }
     }
 

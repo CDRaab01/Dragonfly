@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.dragonfly.settings.UpdateSource
 import com.dragonfly.ui.theme.DragonflyTheme
 import com.dragonfly.update.AppState
 import com.dragonfly.update.UpdateFlowManager
@@ -148,33 +146,6 @@ fun AppDetailScreen(
                                 text = if (state.status?.state == AppState.NOT_INSTALLED) "Install" else "Update",
                                 onClick = viewModel::update,
                                 compact = true,
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                PanelCard(Modifier.fillMaxWidth()) {
-                    Column {
-                        SectionHeader("Update source")
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = state.sourceOverride == null,
-                                onClick = { viewModel.setSourceOverride(null) },
-                                label = { Text("Default") },
-                            )
-                            FilterChip(
-                                selected = state.sourceOverride == UpdateSource.GITHUB,
-                                onClick = { viewModel.setSourceOverride(UpdateSource.GITHUB) },
-                                label = { Text("GitHub") },
-                                enabled = viewModel.app.githubRepo != null,
-                            )
-                            FilterChip(
-                                selected = state.sourceOverride == UpdateSource.SELF_HOST,
-                                onClick = { viewModel.setSourceOverride(UpdateSource.SELF_HOST) },
-                                label = { Text("Self-host") },
                             )
                         }
                     }

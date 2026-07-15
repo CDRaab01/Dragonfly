@@ -22,21 +22,13 @@ class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private object Keys {
-        val globalSource = stringPreferencesKey("source.global")
-        val selfHostBaseUrl = stringPreferencesKey("selfhost.base_url")
         val checkInterval = stringPreferencesKey("check.interval")
         val wifiOnly = booleanPreferencesKey("downloads.wifi_only")
-        fun appSource(appKey: String) = stringPreferencesKey("source.app.$appKey")
         fun appServerUrl(appKey: String) = stringPreferencesKey("server_url.app.$appKey")
     }
 
     val snapshots: Flow<SettingsSnapshot> = context.settingsDataStore.data.map { prefs ->
         SettingsSnapshot(
-            globalSource = prefs[Keys.globalSource].toEnum(UpdateSource.GITHUB),
-            perAppSource = AppRegistry.apps.mapNotNull { app ->
-                prefs[Keys.appSource(app.key)]?.toEnumOrNull<UpdateSource>()?.let { app.key to it }
-            }.toMap(),
-            selfHostBaseUrl = prefs[Keys.selfHostBaseUrl].orEmpty(),
             checkInterval = prefs[Keys.checkInterval].toEnum(CheckInterval.ON_LAUNCH),
             wifiOnly = prefs[Keys.wifiOnly] ?: false,
             perAppServerUrl = AppRegistry.apps.mapNotNull { app ->
@@ -46,15 +38,6 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun snapshot(): SettingsSnapshot = snapshots.first()
-
-    suspend fun setGlobalSource(source: UpdateSource) = edit { it[Keys.globalSource] = source.name }
-
-    /** null clears the override so the app follows the global default again. */
-    suspend fun setAppSource(appKey: String, source: UpdateSource?) = edit {
-        if (source == null) it.remove(Keys.appSource(appKey)) else it[Keys.appSource(appKey)] = source.name
-    }
-
-    suspend fun setSelfHostBaseUrl(url: String) = edit { it[Keys.selfHostBaseUrl] = url.trim() }
 
     /** Blank clears the broker's opinion so the sibling falls back to its own configured URL. */
     suspend fun setAppServerUrl(appKey: String, url: String) = edit {
