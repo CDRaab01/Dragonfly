@@ -17,7 +17,7 @@ zero friction to date):
 
 ## server/ — dragonfly-id
 
-Small on purpose (7 test files, 2 migrations): an identity server earns trust by
+Small on purpose (8 test files, 2 migrations): an identity server earns trust by
 staying auditable.
 
 ### Module map
@@ -34,6 +34,7 @@ staying auditable.
 | `app/routers/cross_app.py` | `POST /cross-app/token` — client-credentials → short-lived RS256 token `aud="cross-app"`; 404 until `CROSS_APP_CLIENTS` is set |
 | `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for an **allowlisted** throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set; the subject must be in `SMOKE_SUBJECT_EMAILS` (fail-closed, F2) else 403 — without the allowlist a valid smoke credential could impersonate any account on any suite app |
 | `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens (with a surrogate `id` for revoke handles), users |
+| `app/maintenance.py` | `prune_stale_tokens` — deletes revoked/expired refresh tokens + expired auth codes; run on startup via a defensive FastAPI lifespan hook (self-cleans each deploy, no scheduler) |
 
 ### Config gotchas (each has bitten)
 

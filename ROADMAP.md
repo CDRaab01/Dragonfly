@@ -54,9 +54,10 @@ shared Glance theming primitives in Pulse). Cheap hub-side add: **static app sho
 2. ✓ **Self-service account surface** — DONE 2026-07-15. `GET /account` (session-cookie-gated
    HTML): password change + active-session list/revoke + revoke-all. Reachable via "Manage your
    account" on the login page. A hub-app card (deep-link to `/account`) is a possible follow-up.
-3. **Refresh-token hygiene:** a scheduled prune of expired/rotated rows, and alerting on
-   anomalous issuance (uptime-kuma can watch a `/health`-style stats endpoint). *(Now that
-   revoke exists, the `revoked=True` rows accumulate — the prune is the natural next step.)*
+3. **Refresh-token hygiene:** ✓ **prune DONE 2026-07-15** — `app/maintenance.prune_stale_tokens`
+   sweeps revoked/expired refresh tokens + expired auth codes on startup (a FastAPI lifespan hook,
+   defensive/non-fatal), so the table self-cleans each deploy without a separate scheduler. Still
+   open: alerting on anomalous issuance (uptime-kuma can watch a `/health`-style stats endpoint).
 4. **Backups:** the identity DB is now the most important 20 MB on the host — it's in the
    suite-wide backup item (host ROADMAP Tier 1 #1) but worth naming here: losing it strands
    every app's SSO link.

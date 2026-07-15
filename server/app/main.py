@@ -1,3 +1,6 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -5,15 +8,35 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
+from app.database import AsyncSessionLocal
 from app.limiter import limiter
+from app.maintenance import prune_stale_tokens
 from app.routers import account, accounts, cross_app, export, oidc, smoke
+
+logger = logging.getLogger("dragonfly-id")
 
 # Single source for the human-facing version, reused by GET /version below.
 APP_VERSION = "0.1.0"
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Housekeeping on boot (each deploy): sweep revoked/expired tokens + stale auth codes.
+    # Defensive — a maintenance hiccup must never stop the identity server from starting.
+    try:
+        async with AsyncSessionLocal() as db:
+            removed = await prune_stale_tokens(db)
+        if removed:
+            logger.info("startup prune removed %d stale token/code rows", removed)
+    except Exception:  # noqa: BLE001
+        logger.warning("startup token prune failed (non-fatal)", exc_info=True)
+    yield
+
+
 app = FastAPI(
     title="Dragonfly ID",
     version=APP_VERSION,
+    lifespan=lifespan,
     docs_url="/docs" if settings.docs_enabled else None,
     redoc_url="/redoc" if settings.docs_enabled else None,
     openapi_url="/openapi.json" if settings.docs_enabled else None,
