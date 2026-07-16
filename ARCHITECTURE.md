@@ -17,7 +17,7 @@ zero friction to date):
 
 ## server/ — dragonfly-id
 
-Small on purpose (8 test files, 2 migrations): an identity server earns trust by
+Small on purpose (10 test files, 3 migrations): an identity server earns trust by
 staying auditable.
 
 ### Module map
@@ -35,6 +35,9 @@ staying auditable.
 | `app/routers/smoke.py` | `POST /smoke/token` — client-credentials → short-lived RS256 token `aud="suite"` for an **allowlisted** throwaway email (Magpie CLAUDE.md §9: SSO-only apps have no register/login to script a post-deploy smoke against); 404 until `SMOKE_CLIENTS` is set; the subject must be in `SMOKE_SUBJECT_EMAILS` (fail-closed, F2) else 403 — without the allowlist a valid smoke credential could impersonate any account on any suite app |
 | `app/models/oauth.py`, `user.py` | Auth codes, refresh tokens (with a surrogate `id` for revoke handles), users |
 | `app/maintenance.py` | `prune_stale_tokens` — deletes revoked/expired refresh tokens + expired auth codes; run on startup via a defensive FastAPI lifespan hook (self-cleans each deploy, no scheduler) |
+| `app/digest/` (Tier W1) | The suite **weekly digest**, the "one product" surface. `aggregator.py` mints an **in-process** RS256 cross-app token for the owner (`tokens.mint_cross_app_token`, no client secret) and pulls each app's range endpoint best-effort (Spotter `/workouts`, Plate `/cross-app/summary`, Cookbook `/cross-app/cooked`, Magpie `/cross-app/summary` — any failure ⇒ `None` for that domain); `narrator.py` asks LM Studio for a 2–4-sentence recap over the numbers (returns `None` on any failure ⇒ numbers-only); `service.py` computes the completed Mon–Sun week bounds, upserts one `weekly_digests` row/week, and fires an ntfy nudge; `scheduler.py` is an hourly loop that generates once on Sunday ≥18:00 local (idempotent). **Entirely dormant until configured** — `digest_owner_email` unset ⇒ the scheduler returns immediately and the read endpoint 404s |
+| `app/routers/digest.py` | `GET /digest/weekly` + `POST /digest/generate` — both gated by the `X-Digest-Key` header (owner-scoped single key, no user session — the hub has no account); 404 until `DIGEST_READ_KEY` is set, 401 on a wrong key |
+| `app/models/digest.py` | `WeeklyDigest` — one row per owner+week (`week_start`/`week_end`, JSON per-domain payload, nullable LM narrative); migration `0003` |
 
 ### Config gotchas (each has bitten)
 

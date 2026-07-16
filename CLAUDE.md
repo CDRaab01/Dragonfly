@@ -90,8 +90,10 @@ the original plan to copy Hawksnest's `themes.css` is superseded.
 - `POST_NOTIFICATIONS` (API 33+, for background "update available" nudges)
 
 ## Screens
-- **Home (launcher/dashboard):** app cards (Spotter / Plate / Cookbook / Hawksnest) — tap to launch the installed app; each card shows installed version, latest version, status, and a per-app update button when one is available. Global "Check all". Cards for not-yet-installed apps offer install. A **suite-status banner** ("All systems go" / "N down") sits below the hero and taps through to Suite status.
+- **Home (launcher/dashboard):** app cards (Spotter / Plate / Cookbook / Hawksnest) — tap to launch the installed app; each card shows installed version, latest version, status, and a per-app update button when one is available. Global "Check all". Cards for not-yet-installed apps offer install. A **suite-status banner** ("All systems go" / "N down") sits below the hero and taps through to Suite status, and a **"Your week" digest banner** taps through to the weekly digest.
 - **Suite status (v2 dashboard):** live "is my world green" surface — per-service up/down for the 4 suite backends (with version·commit + last-deploy from `/version`) and the media stack (reachability only), grouped Suite / Media / Automation. See the v2 build log below.
+- **Weekly digest ("Your week"):** the narrated suite recap (client-only) fetched from dragonfly-id (`GET {digestBaseUrl}/digest/weekly`, `X-Digest-Key`) — a violet narrative paragraph + four optional Training/Nutrition/Cooking/Money cards (each shows only when its domain returned data). Empty states: 404 → "no digest yet", 401 → "add your key". See the 2026-07-16 build log below.
+- **Home-screen widget:** a Glance "suite at a glance" grid (`widget/DragonflyWidget`) — each suite app + a status dot from the last persisted probe snapshot; never runs a network probe.
 - **App detail:** version history, source config, changelog (GitHub release body if available).
 - **Settings:** as above.
 
@@ -257,6 +259,36 @@ render/tap-through deferred (needs the phone).
 - Home's status refresh runs in its own coroutine, independent of the (slower) GitHub update check.
 - Media/tailnet probes are arbitrary GETs — **no `<queries>` entry** (that's package visibility).
 
+## Build log (2026-07-15) — home-screen suite-status widget (Tier W4)
+
+A Glance "suite at a glance" home-screen widget (`widget/DragonflyWidget`): each suite app + a
+status dot (green up / red down / dim off-network·unknown), headed "Dragonfly" in the hub's violet,
+tap → MainActivity. Media rows dropped so it stays the *app* glance. Mirrors the Magpie/Cookbook
+Glance precedent — the widget **never probes**: `StatusRepository.refresh()` now persists a compact
+`WidgetStatusSnapshot` (`StatusSnapshotStore`, DataStore) and pokes `WidgetRefresher.updateAll`
+after every probe pass, and the widget reads that last-known snapshot via a Hilt `@EntryPoint`.
+Colors are hardcoded PULSE-violet (Glance can't read the Compose theme). Glance/glance-material3
+1.1.1 added to the catalog. `:app:compileDebugKotlin` + `:app:testDebugUnitTest` green (new
+`WidgetSnapshotTest`, 2/2); `assembleDebug` left to CI (local Pulse junction).
+
+## Build log (2026-07-16) — suite weekly digest (Tier W1, the "one product" surface)
+
+The flagship cross-app feature: a digest service **inside dragonfly-id** (`server/app/digest/`) plus
+a hub screen. Server: a Sunday-evening scheduler → an aggregator that mints an in-process RS256
+cross-app token for the owner and pulls Spotter/Plate/Cookbook/Magpie range endpoints (each
+best-effort) → LM Studio narrates the numbers (degrades to numbers-only when unreachable) → one
+`weekly_digests` row/week (migration `0003`) → an ntfy nudge. `GET /digest/weekly` +
+`POST /digest/generate` are gated by `X-Digest-Key`. **Dormant until armed** (see "Arming the weekly
+digest" above): the read/generate endpoints 404 and the scheduler no-ops until `DIGEST_OWNER_EMAIL`
++ `DIGEST_READ_KEY` (and the per-app base URLs) are set. 52 server tests green (new `test_digest.py`:
+generate/read/auth/degrade + week-bounds math). Hub: `digest/` (nullable `WeeklyDigest` DTOs — any
+domain null = that app was unreachable, narrative null = LM down; pure `DigestFormatter`;
+status-code-aware `DigestRepository`), `ui/digest/` DigestScreen ("Your week" — narrated paragraph +
+four optional cards), a Home "Your week" banner, and a Settings "Weekly digest" section (server URL +
+read key, `DigestKeyStore` encrypted). Hub gate green (`:app:compileDebugKotlin`
+`:app:testDebugUnitTest`, new DTO-parse + formatter tests). Deployed: Server CI + Deploy green on
+`a20b5c1`; the server redeploy is a runtime no-op until the owner arms the `.env`.
+
 
 ---
 
@@ -320,6 +352,16 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   an empty allowlist denies everyone. Without it the smoke secret was an impersonate-any-account
   oracle across every suite app. Non-secret ⇒ pinned in compose `environment:` (invariant #4),
   set to `magpie-smoke@dragonflymedia.org` to match Magpie's `synthetic_smoke.py`.
+- **Weekly digest (Tier W1, 2026-07-16):** `server/app/digest/` assembles the owner's week across
+  the suite and narrates it. `GET /digest/weekly` and `POST /digest/generate` are both gated by the
+  `X-Digest-Key` header (owner-scoped single key — the hub has no user session); **404 until
+  `DIGEST_READ_KEY` is set, 401 on a wrong key.** The aggregator mints an in-process RS256 cross-app
+  token for the owner (no client secret) and pulls Spotter `/workouts`, Plate `/cross-app/summary`,
+  Cookbook `/cross-app/cooked`, Magpie `/cross-app/summary` — each best-effort, so one app down never
+  sinks the digest. LM Studio narrates the numbers (degrades to numbers-only when unreachable). One
+  `weekly_digests` row per owner+week (migration `0003`); an hourly scheduler generates once on Sunday
+  ≥18:00 local (idempotent), then fires an ntfy nudge. **Entirely dormant until armed** — see "Arming
+  the weekly digest" below; smoke-test with `POST /digest/generate` (+ the read key header).
 - **Config gotchas:** `ISSUER` must exactly equal the public URL (it is baked into every issued
   token); `OIDC_PRIVATE_KEY` is a single line with `\n` escapes; `server/.env` must be LF-ended.
   Changing ISSUER breaks verification in every app server until config is updated — coordinate with
@@ -346,6 +388,29 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
 - **Local tests:** `.venv\Scripts\python.exe -m pytest` with a throwaway database (CI spins a
   Postgres service; locally reuse a sibling db container and an override `DATABASE_URL` pointing
   at `127.0.0.1` — never `localhost`, IPv6-first resolution stalls every connection).
+
+### Arming the weekly digest (owner one-time)
+
+The digest ships **off**. It stays inert — the read/generate endpoints 404 and the Sunday scheduler
+returns immediately — until the owner sets these in `server/.env` and redeploys
+(`docker compose up -d --force-recreate server`; Compose won't re-read a changed `.env` on a plain
+`up`):
+
+- `DIGEST_OWNER_EMAIL` — the single SSO email the digest is built for. **Empty ⇒ whole feature off.**
+- `DIGEST_READ_KEY` — the bearer the hub sends as `X-Digest-Key`. **Empty ⇒ the read/generate
+  endpoints 404.** Put the same value in the hub's Settings → "Weekly digest" (read key). Generate
+  with `openssl rand -hex 32`.
+- Per-app base URLs the aggregator pulls: `SPOTTER_BASE_URL`, `PLATE_BASE_URL`, `COOKBOOK_BASE_URL`,
+  `MAGPIE_BASE_URL`. Any unset ⇒ that domain is silently skipped (the digest degrades). **Magpie is
+  tailnet-only — use its `ts.net` URL** (the host reaches it over the tailnet), not a public host.
+- LM Studio narration (optional): `LM_STUDIO_BASE_URL` (default `http://host.docker.internal:1234/v1`
+  — inside the container `localhost` is the container, so it points at the host) and `LM_STUDIO_MODEL`
+  (default `google/gemma-4-e4b`). Unreachable ⇒ the digest still ships numbers-only.
+- ntfy nudge (optional): `NTFY_BASE_URL` + `NTFY_DIGEST_TOPIC`. Empty ⇒ no push.
+
+**Smoke-test after arming:** `POST /digest/generate` with the `X-Digest-Key` header returns the
+generated digest (400 if `DIGEST_OWNER_EMAIL` is still unset). The hub's Settings must carry the
+same server URL (default `https://id.dragonflymedia.org`) + read key for its "Your week" screen.
 
 ## Suite-wide release gotchas (learned on-device)
 

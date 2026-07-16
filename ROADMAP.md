@@ -34,14 +34,26 @@ the round's last commit. The hub's round (host Tier W3) rolls up items already i
 5. **Magpie tile upgrade**: net-this-month via `/cross-app/summary` (Magpie ROADMAP #22).
 6. This repo also hosts the two suite-wide wow tracks: the **shared push pipeline** (fun tier
    #3, ntfy — Hawksnest's V1 already deployed the backend) and the **suite weekly digest**
-   surface (host Tier W1).
+   surface (host Tier W1). ✓ **Weekly digest DONE 2026-07-16** — a digest service inside
+   dragonfly-id (`server/app/digest/`, migration 0003): a Sunday-evening scheduler → an aggregator
+   that mints an in-process cross-app token for the owner and pulls Spotter/Plate/Cookbook/Magpie
+   range endpoints best-effort → LM Studio narrates (degrades to numbers-only) → one `weekly_digests`
+   row/week → an ntfy nudge; `GET /digest/weekly` (header `X-Digest-Key`) serves it. The hub has a
+   "Your week" digest screen (narrated paragraph + four Training/Nutrition/Cooking/Money cards, each
+   optional) + a Settings "Weekly digest" section. **Dormant until the owner arms the server `.env`**
+   (`DIGEST_OWNER_EMAIL` + `DIGEST_READ_KEY` + the per-app base URLs, etc. — see CLAUDE.md "Arming
+   the weekly digest"); endpoints 404 and the scheduler no-ops until then.
 7. Version 0.1.0 → **1.0.0** at the gate — deliberately last among the six apps.
 
 **Gap review 2026-07-14 (host ROADMAP3 additions):** the suite bar gained accessibility (#11)
 and biometric-where-warranted (#12); two suite tracks land in this repo's court — **retention
 nudges** (Tier W2b: the product layer on the shared ntfy pipeline — per-app opt-in reminder
 settings, quiet hours) and the **Pulse widget family** (Tier W4: hub suite-status widget +
-shared Glance theming primitives in Pulse). ✓ **Static app shortcuts DONE 2026-07-15** —
+shared Glance theming primitives in Pulse). ✓ **Hub suite-status widget DONE 2026-07-15** — a
+Glance home-screen "suite at a glance" grid (`widget/DragonflyWidget`): each suite app + a status
+dot, reading the persisted `StatusSnapshotStore` last-known snapshot (never probes network);
+`StatusRepository.refresh()` writes the snapshot + pokes `WidgetRefresher` after every probe pass.
+Still open under W4: promoting the shared Glance theming primitives up into Pulse. ✓ **Static app shortcuts DONE 2026-07-15** —
 long-press the hub icon → "Check updates" (opens Home, which refreshes all apps) / "Suite status"
 (jumps to the status screen). `res/xml/shortcuts.xml` + a `dragonfly://shortcut/<target>` VIEW
 intent routed in `MainActivity`/`DragonflyNavGraph` (handles the singleTask warm re-launch too).

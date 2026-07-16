@@ -68,6 +68,36 @@ zero-downtime (see below).
 new RS256 token during the transition, so servers can be updated one at a time. Drop `CROSS_APP_SECRET`
 only after every consumer mints RS256 (a later cleanup).
 
+## Arming the weekly digest (Tier W1)
+
+The digest service (`app/digest/`) ships **off**: `GET /digest/weekly` + `POST /digest/generate`
+return 404 and the Sunday-evening scheduler no-ops until the owner configures it in `server/.env`,
+then redeploys (`docker compose up -d --force-recreate server` — a plain `up` won't re-read `.env`):
+
+```
+DIGEST_OWNER_EMAIL=you@example.com        # the single SSO email; empty ⇒ whole feature off
+DIGEST_READ_KEY=<openssl rand -hex 32>    # hub sends it as X-Digest-Key; empty ⇒ endpoints 404
+SPOTTER_BASE_URL=http://server:8000       # per-app range sources; any unset ⇒ that domain skipped
+PLATE_BASE_URL=http://server:8001
+COOKBOOK_BASE_URL=http://server:8003
+MAGPIE_BASE_URL=http://<magpie>.ts.net    # Magpie is tailnet-only — its ts.net URL, not a public host
+LM_STUDIO_MODEL=google/gemma-4-e4b        # optional narration; unreachable ⇒ numbers-only
+NTFY_BASE_URL=https://ntfy.sh             # optional "your week is ready" nudge
+NTFY_DIGEST_TOPIC=<topic>
+```
+
+(`LM_STUDIO_BASE_URL` defaults to `http://host.docker.internal:1234/v1` — inside the container
+`localhost` is the container, so it points at the host.) Put the same `DIGEST_READ_KEY` in the hub
+app's Settings → "Weekly digest". **Smoke-test:**
+
+```bash
+curl -X POST https://id.dragonflymedia.org/digest/generate -H 'X-Digest-Key: <the key>'
+# → the generated digest JSON (400 if DIGEST_OWNER_EMAIL is still unset, 401 on a wrong key)
+```
+
+The Sunday 18:00-local scheduler generates the completed Mon–Sun week once (idempotent) and pushes
+the ntfy nudge; a digest is one `weekly_digests` row per owner+week (migration `0003`).
+
 ## Rotating the OIDC signing key
 
 Rotate on a schedule (e.g. yearly) or immediately on any suspicion the private key leaked. This is
