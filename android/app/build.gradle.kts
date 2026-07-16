@@ -79,6 +79,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
+
+    // Glance: the home-screen suite-status widget (reads the last-known probe snapshot; no network
+    // of its own). Same stack as the Magpie/Cookbook widgets.
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)

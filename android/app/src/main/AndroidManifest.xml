@@ -57,6 +57,20 @@
             android:exported="true"
             android:readPermission="com.dragonfly.permission.READ_SUITE_CONFIG" />
 
+        <!-- Home-screen suite-status glance (each suite app up/down), reads the last-known probe
+             snapshot — no network of its own. -->
+        <receiver
+            android:name=".widget.DragonflyWidgetReceiver"
+            android:exported="true"
+            android:label="Suite status">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dragonfly_widget_info" />
+        </receiver>
+
         <!-- WorkManager on-demand initialization: Hilt supplies the worker factory via
              DragonflyApp's Configuration.Provider, so the default initializer must not run. -->
         <provider

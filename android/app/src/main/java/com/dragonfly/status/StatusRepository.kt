@@ -1,6 +1,7 @@
 package com.dragonfly.status
 
 import com.dragonfly.settings.SettingsRepository
+import com.dragonfly.widget.WidgetRefresher
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
@@ -21,6 +22,8 @@ import kotlinx.coroutines.sync.withLock
 class StatusRepository @Inject constructor(
     private val prober: StatusProber,
     private val settingsRepository: SettingsRepository,
+    private val snapshotStore: StatusSnapshotStore,
+    private val widgetRefresher: WidgetRefresher,
 ) {
     private val _statuses = MutableStateFlow(
         ServiceRegistry.services.map { ServiceStatus(it, ServiceState.CHECKING) },
@@ -42,6 +45,10 @@ class StatusRepository @Inject constructor(
             }.awaitAll()
         }
         _statuses.value = result
+        // Persist the last-known snapshot and redraw the home-screen widget — the widget reads this,
+        // never the network. Failures here must not fail the in-app refresh.
+        runCatching { snapshotStore.save(buildWidgetSnapshot(result)) }
+        widgetRefresher.refresh()
         result
     }
 }
