@@ -67,6 +67,29 @@ class Settings(BaseSettings):
     # Expose interactive docs. Disable on public deploys.
     docs_enabled: bool = True
 
+    # --- Suite weekly digest (ROADMAP3 Tier W1) ---
+    # The single owner the digest is built for (SSO email). Empty ⇒ the digest is disabled.
+    digest_owner_email: str = ""
+    # Bearer key the hub presents to read GET /digest/weekly (owner-scoped, single key for a
+    # single-owner suite). Empty ⇒ the read endpoint 404s (feature off).
+    digest_read_key: str = ""
+    # `azp` stamped on the cross-app token the digest mints for itself (in-process, so no secret).
+    digest_client_azp: str = "digest"
+    # Per-app base URLs the aggregator pulls range endpoints from. Magpie is tailnet-only, so its
+    # value is the ts.net URL (the host reaches it over the tailnet). Empty ⇒ that domain is skipped
+    # (the digest degrades to whatever it could reach).
+    spotter_base_url: str = ""
+    plate_base_url: str = ""
+    cookbook_base_url: str = ""
+    magpie_base_url: str = ""
+    # LM Studio (local) for the narrative. Inside the container localhost is the container, so this
+    # points at the host. Narration degrades to "just the numbers" when unreachable.
+    lm_studio_base_url: str = "http://host.docker.internal:1234/v1"
+    lm_studio_model: str = "google/gemma-4-e4b"
+    # ntfy nudge ("your week is ready") published after a scheduled generation. Empty ⇒ no push.
+    ntfy_base_url: str = ""
+    ntfy_digest_topic: str = ""
+
     # Deploy stamp surfaced by GET /version (injected at deploy time).
     git_sha: str = "unknown"
     built_at: str = "unknown"

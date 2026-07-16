@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -9,9 +10,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.database import AsyncSessionLocal
+from app.digest.scheduler import digest_scheduler_loop
 from app.limiter import limiter
 from app.maintenance import prune_stale_tokens
-from app.routers import account, accounts, cross_app, export, oidc, smoke
+from app.routers import account, accounts, cross_app, digest, export, oidc, smoke
 
 logger = logging.getLogger("dragonfly-id")
 
@@ -30,7 +32,12 @@ async def lifespan(_: FastAPI):
             logger.info("startup prune removed %d stale token/code rows", removed)
     except Exception:  # noqa: BLE001
         logger.warning("startup token prune failed (non-fatal)", exc_info=True)
-    yield
+    # The weekly-digest scheduler (Tier W1). No-ops itself when digest_owner_email is unset.
+    digest_task = asyncio.create_task(digest_scheduler_loop())
+    try:
+        yield
+    finally:
+        digest_task.cancel()
 
 
 app = FastAPI(
@@ -79,6 +86,7 @@ app.include_router(accounts.router)
 app.include_router(account.router)
 app.include_router(oidc.router)
 app.include_router(cross_app.router)
+app.include_router(digest.router)
 app.include_router(export.router)
 app.include_router(smoke.router)
 

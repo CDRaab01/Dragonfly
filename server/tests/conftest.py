@@ -16,11 +16,15 @@ os.environ.setdefault("CROSS_APP_CLIENTS", "testclient:testsecret")
 os.environ.setdefault("SMOKE_CLIENTS", "smoketestclient:smoketestsecret")
 # F2: the smoke subject-email allowlist (fail-closed) — the emails the endpoint tests mint for.
 os.environ.setdefault("SMOKE_SUBJECT_EMAILS", "smoke@example.com u@e.com")
+# Enable the weekly digest (Tier W1) with a known read key + owner for the digest tests.
+os.environ.setdefault("DIGEST_READ_KEY", "test-digest-key")
+os.environ.setdefault("DIGEST_OWNER_EMAIL", "owner@example.com")
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+import app.models.digest  # noqa: F401
 import app.models.oauth  # noqa: F401  register tables on Base
 import app.models.user  # noqa: F401
 from app.database import Base, engine
