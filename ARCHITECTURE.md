@@ -53,8 +53,9 @@ staying auditable.
 | Package | Responsibility |
 |---|---|
 | `registry/` | `AppRegistry` — the six managed apps (key/package/repo), single source of truth. Every package here must also be in the manifest `<queries>` block or version reads silently fail |
-| `settings/` | DataStore settings (auto-check interval, Wi-Fi-only, per-app broker server URL) + `PatStore` (GitHub PAT, EncryptedSharedPreferences, attached only to `api.github.com`) |
+| `settings/` | DataStore settings (auto-check interval, Wi-Fi-only, per-app broker server URL, digest base URL) + `PatStore` (GitHub PAT) and `DigestKeyStore` (weekly-digest read key) — both EncryptedSharedPreferences (`secrets` file); the PAT attaches only to `api.github.com`, the digest key rides the `X-Digest-Key` header |
 | `net/` | Retrofit `GitHubApi`, `HttpFetcher` (version.json GETs), `NetworkStatus` |
+| `digest/` | The weekly recap (client-only): `WeeklyDigest` DTOs (every field nullable — any domain null = that app was unreachable; narrative null = LM down), `DigestFormatter` (pure, unit-tested: headline strings, signed dollar formatting, week-range label, which-cards-show), `DigestRepository` (raw status-code-aware OkHttp GET `{digestBaseUrl}/digest/weekly` → `DigestResult` Success/NotYet(404)/NeedsKey(401)/Error). Fixed contract served by dragonfly-id |
 | `update/` | The update pipeline: `ReleaseResolver` (pure, unit-tested: parse `version.json`, pick assets, diff versionCodes), `UpdateRepository`, `UpdateFlowManager` (download → verify → install phases), `InstalledAppsDataSource` |
 | `install/` | `ApkDownloader` (OkHttp streaming; **SHA-256 gate deletes on mismatch — mandatory**), `ApkInstaller` (PackageInstaller session → system prompt), `InstallResultReceiver`/`InstallEventBus` |
 | `history/` | Update history (JSON in DataStore, capped 50; Room deliberately rejected) |
@@ -62,7 +63,7 @@ staying auditable.
 | `suiteconfig/` | `SuiteConfigProvider` — signature-permission ContentProvider (authority `com.dragonfly.suiteconfig`) serving per-app server URLs to siblings; the security model is the shared signing key |
 | `status/` | The v2 dashboard: `ServiceRegistry` (**backends**, deliberately separate from AppRegistry — services ≠ installable apps), `StatusResolver` (pure), `StatusProber` (parallel fan-out on a dedicated 6s-timeout OkHttp client), `StatusRepository` (shared StateFlow). SUITE probes require `/health` ok + parse `/version`; REACHABILITY probes count any non-gateway HTTP (a Caddy basic_auth 401 = up); tailnet-only hosts degrade to "off-network", never a false "down". `StatusRepository.refresh()` also persists a compact `WidgetStatusSnapshot` (`StatusSnapshotStore`, DataStore) and pokes `WidgetRefresher` so the home-screen widget shows last-known truth without probing |
 | `widget/` | `DragonflyWidget` — Glance home-screen "suite at a glance" (each suite app + a status dot; media rows dropped), reads the persisted `StatusSnapshotStore` via a Hilt `@EntryPoint` (Magpie/Cookbook widget precedent — the widget never runs network). `WidgetRefresher.updateAll` redraws after a probe pass; colors are hardcoded PULSE-violet (Glance can't read the Compose theme) |
-| `ui/` | Home (app cards + status banner), detail, settings, status screen; `DragonflyTheme` — violet leads |
+| `ui/` | Home (app cards + status banner + "Your week" digest banner), detail, settings, status screen, digest screen (`Routes.DIGEST`); `DragonflyTheme` — violet leads |
 
 ### The pure/impure split (house pattern)
 

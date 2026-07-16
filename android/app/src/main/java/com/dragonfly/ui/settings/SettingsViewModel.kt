@@ -3,6 +3,7 @@ package com.dragonfly.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dragonfly.settings.CheckInterval
+import com.dragonfly.settings.DigestKeyStore
 import com.dragonfly.settings.PatStore
 import com.dragonfly.settings.SettingsRepository
 import com.dragonfly.settings.SettingsSnapshot
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val patStore: PatStore,
+    private val digestKeyStore: DigestKeyStore,
     private val scheduler: UpdateScheduler,
 ) : ViewModel() {
 
@@ -30,6 +32,10 @@ class SettingsViewModel @Inject constructor(
     /** Whether a PAT is stored; the value itself is never echoed back to the UI. */
     private val _hasPat = MutableStateFlow(patStore.githubPat != null)
     val hasPat = _hasPat.asStateFlow()
+
+    /** Whether a digest key is stored; the value itself is never echoed back to the UI. */
+    private val _hasDigestKey = MutableStateFlow(digestKeyStore.digestKey != null)
+    val hasDigestKey = _hasDigestKey.asStateFlow()
 
     /** Broker-managed server URL for one app; blank clears it (sibling falls back to its own). */
     fun setAppServerUrl(appKey: String, url: String) = viewModelScope.launch {
@@ -54,6 +60,20 @@ class SettingsViewModel @Inject constructor(
     fun clearPat() {
         patStore.githubPat = null
         _hasPat.value = false
+    }
+
+    fun setDigestBaseUrl(url: String) = viewModelScope.launch {
+        settingsRepository.setDigestBaseUrl(url)
+    }
+
+    fun saveDigestKey(key: String) {
+        digestKeyStore.digestKey = key
+        _hasDigestKey.value = digestKeyStore.digestKey != null
+    }
+
+    fun clearDigestKey() {
+        digestKeyStore.digestKey = null
+        _hasDigestKey.value = false
     }
 
     private suspend fun reschedule() {

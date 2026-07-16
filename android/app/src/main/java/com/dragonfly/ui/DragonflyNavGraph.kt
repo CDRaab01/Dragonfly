@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dragonfly.ui.detail.AppDetailScreen
+import com.dragonfly.ui.digest.DigestScreen
 import com.dragonfly.ui.home.HomeScreen
 import com.dragonfly.ui.settings.SettingsScreen
 import com.dragonfly.ui.status.SuiteStatusScreen
@@ -14,6 +15,7 @@ object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val STATUS = "status"
+    const val DIGEST = "digest"
     const val APP_DETAIL = "app/{key}"
     fun appDetail(key: String) = "app/$key"
 }
@@ -41,6 +43,7 @@ fun DragonflyNavGraph(shortcutTarget: String? = null, onShortcutHandled: () -> U
                 onOpenApp = { key -> navController.navigate(Routes.appDetail(key)) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenStatus = { navController.navigate(Routes.STATUS) },
+                onOpenDigest = { navController.navigate(Routes.DIGEST) },
             )
         }
         composable(Routes.APP_DETAIL) {
@@ -51,6 +54,12 @@ fun DragonflyNavGraph(shortcutTarget: String? = null, onShortcutHandled: () -> U
         }
         composable(Routes.STATUS) {
             SuiteStatusScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.DIGEST) {
+            DigestScreen(
+                onBack = { navController.popBackStack() },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            )
         }
     }
 }

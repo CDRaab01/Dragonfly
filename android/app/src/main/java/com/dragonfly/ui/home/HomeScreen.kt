@@ -59,6 +59,7 @@ fun HomeScreen(
     onOpenApp: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenStatus: () -> Unit,
+    onOpenDigest: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -112,6 +113,9 @@ fun HomeScreen(
                 StatusBanner(status = state.status, onClick = onOpenStatus)
             }
             item {
+                DigestBanner(onClick = onOpenDigest)
+            }
+            item {
                 SectionHeader("Apps", modifier = Modifier.padding(top = 8.dp))
             }
             items(state.cards, key = { it.status.app.key }) { card ->
@@ -144,6 +148,32 @@ private fun StatusBanner(status: StatusAggregate, onClick: () -> Unit) {
                 Caption(
                     "Suite status · ${status.up}/${status.total} up" +
                         if (status.offNetwork > 0) " · ${status.offNetwork} off-network" else "",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DigestBanner(onClick: () -> Unit) {
+    val colors = DragonflyTheme.colors
+    PanelCard(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        channel = colors.hub.base,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(colors.hub.base))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Your week", style = MaterialTheme.typography.titleMedium)
+                Caption(
+                    "The suite's weekly recap",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

@@ -53,6 +53,7 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsState()
     val hasPat by viewModel.hasPat.collectAsState()
+    val hasDigestKey by viewModel.hasDigestKey.collectAsState()
 
     Scaffold(
         topBar = {
@@ -137,6 +138,57 @@ fun SettingsScreen(
             }
 
             item {
+                var digestKey by remember { mutableStateOf("") }
+                PanelCard(Modifier.fillMaxWidth()) {
+                    Column {
+                        SectionHeader("Weekly digest")
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "The suite's weekly recap, served by the digest server.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        DigestBaseUrlRow(
+                            saved = settings.digestBaseUrl,
+                            onSave = { viewModel.setDigestBaseUrl(it) },
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Caption(if (hasDigestKey) "Key stored (encrypted)" else "No key — recap is locked")
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = digestKey,
+                            onValueChange = { digestKey = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Digest key") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PulseButton(
+                                text = "Save",
+                                onClick = {
+                                    viewModel.saveDigestKey(digestKey)
+                                    digestKey = ""
+                                },
+                                compact = true,
+                                enabled = digestKey.isNotBlank(),
+                            )
+                            if (hasDigestKey) {
+                                PulseButton(
+                                    text = "Clear",
+                                    onClick = viewModel::clearDigestKey,
+                                    compact = true,
+                                    tonal = true,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 PanelCard(Modifier.fillMaxWidth()) {
                     Column {
                         SectionHeader("Auto-check")
@@ -199,6 +251,27 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DigestBaseUrlRow(
+    saved: String,
+    onSave: (String) -> Unit,
+) {
+    var text by rememberSaveable(saved) { mutableStateOf(saved) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { text = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Digest server URL") },
+        placeholder = { Text("https://id.dragonflymedia.org") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+    )
+    if (text != saved) {
+        Spacer(Modifier.height(8.dp))
+        PulseButton(text = "Save", onClick = { onSave(text) }, compact = true)
     }
 }
 

@@ -24,6 +24,7 @@ class SettingsRepository @Inject constructor(
     private object Keys {
         val checkInterval = stringPreferencesKey("check.interval")
         val wifiOnly = booleanPreferencesKey("downloads.wifi_only")
+        val digestBaseUrl = stringPreferencesKey("digest.base_url")
         fun appServerUrl(appKey: String) = stringPreferencesKey("server_url.app.$appKey")
     }
 
@@ -34,6 +35,7 @@ class SettingsRepository @Inject constructor(
             perAppServerUrl = AppRegistry.apps.mapNotNull { app ->
                 prefs[Keys.appServerUrl(app.key)]?.takeIf { it.isNotBlank() }?.let { app.key to it }
             }.toMap(),
+            digestBaseUrl = prefs[Keys.digestBaseUrl]?.takeIf { it.isNotBlank() } ?: DEFAULT_DIGEST_BASE_URL,
         )
     }
 
@@ -47,6 +49,12 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setCheckInterval(interval: CheckInterval) = edit { it[Keys.checkInterval] = interval.name }
     suspend fun setWifiOnly(enabled: Boolean) = edit { it[Keys.wifiOnly] = enabled }
+
+    /** Blank restores the [DEFAULT_DIGEST_BASE_URL]. */
+    suspend fun setDigestBaseUrl(url: String) = edit {
+        val trimmed = url.trim()
+        if (trimmed.isEmpty()) it.remove(Keys.digestBaseUrl) else it[Keys.digestBaseUrl] = trimmed
+    }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.settingsDataStore.edit(block)
