@@ -21,6 +21,7 @@ CLIENTS: dict[str, Client] = {
     "cookbook": Client("cookbook", ("com.cookbook:/oauth2redirect",)),
     "dragonfly": Client("dragonfly", ("com.dragonfly:/oauth2redirect",)),
     "magpie": Client("magpie", ("com.magpie:/oauth2redirect",)),
+    "remnant": Client("remnant", ("com.remnant:/oauth2redirect",)),
     # Local development + automated tests (loopback redirect, per RFC 8252).
     "localdev": Client("localdev", ("http://localhost:8100/callback", "http://127.0.0.1/callback")),
 }
