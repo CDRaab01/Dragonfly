@@ -116,6 +116,7 @@ Registry as built (`registry/AppRegistry.kt`) — five apps, Dragonfly included 
 | cookbook | `com.cookbook` | CDRaab01/Cookbook |
 | hawksnest | `com.hawksnest` | CDRaab01/Hawksnest |
 | magpie | `com.magpie` | CDRaab01/Magpie |
+| remnant | `com.remnant` | CDRaab01/Remnant |
 | dragonfly | `com.dragonfly` | CDRaab01/Dragonfly |
 
 Every managed package must also appear in the manifest `<queries>` block (API 30+ package

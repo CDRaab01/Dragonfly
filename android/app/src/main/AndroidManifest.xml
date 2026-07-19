@@ -21,6 +21,7 @@
         <package android:name="com.cookbook" />
         <package android:name="com.hawksnest" />
         <package android:name="com.magpie" />
+        <package android:name="com.remnant" />
     </queries>
 
     <application
