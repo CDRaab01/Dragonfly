@@ -340,7 +340,8 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   `CROSS_APP_CLIENTS`, disabled/404 when unset — ROADMAP T2 #5, see [CROSS-APP.md](CROSS-APP.md)).
 - **Tokens:** RS256 via Authlib JOSE. Access tokens `aud=suite` (what app servers verify);
   id_tokens `aud=<client_id>` + nonce. Static public clients: `spotter`, `plate`, `cookbook`,
-  `dragonfly`, `magpie`, plus `localdev` for tests. Redirect URIs are `<package>:/oauth2redirect`.
+  `dragonfly`, `magpie`, `remnant`, plus `localdev` for tests. Redirect URIs are
+  `<package>:/oauth2redirect`.
   **Synthetic-smoke tokens (2026-07-05, Magpie Phase 8/1):** `POST /smoke/token` mints an
   `aud=suite` token for a caller-supplied throwaway email via a confidential client credential
   (`SMOKE_CLIENTS` env, same `client_id:secret` list shape as `CROSS_APP_CLIENTS` but a
@@ -351,7 +352,8 @@ migrate-on-boot, `server-ci.yml` (ruff + pytest + migration smoke test). Operato
   even a valid smoke credential may only mint for a pre-designated throwaway email, else 403;
   an empty allowlist denies everyone. Without it the smoke secret was an impersonate-any-account
   oracle across every suite app. Non-secret ⇒ pinned in compose `environment:` (invariant #4),
-  set to `magpie-smoke@dragonflymedia.org` to match Magpie's `synthetic_smoke.py`.
+  set to `magpie-smoke@dragonflymedia.org` + `remnant-smoke@dragonflymedia.org` (both SSO-only
+  apps smoke via a suite token) to match each app's `synthetic_smoke.py`.
 - **Weekly digest (Tier W1, 2026-07-16):** `server/app/digest/` assembles the owner's week across
   the suite and narrates it. `GET /digest/weekly` and `POST /digest/generate` are both gated by the
   `X-Digest-Key` header (owner-scoped single key — the hub has no user session); **404 until
