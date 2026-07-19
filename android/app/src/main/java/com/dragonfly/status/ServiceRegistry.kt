@@ -31,6 +31,17 @@ object ServiceRegistry {
             reachability = Reachability.TAILNET_ONLY,
             overrideKey = "magpie",
         ),
+        // Remnant: tailnet-only like Magpie (personal notes incl. a MEDICAL category), served on
+        // HTTPS :8443 because Magpie already owns 443 on the host (Remnant deploy/README.md).
+        MonitoredService(
+            key = "remnant",
+            displayName = "Remnant",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8443",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "remnant",
+        ),
 
         media("plex", "Plex", "https://plex.dragonflymedia.org"),
         media("radarr", "Radarr", "https://radarr.dragonflymedia.org"),

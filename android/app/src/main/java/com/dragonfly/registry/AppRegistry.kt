@@ -21,6 +21,7 @@ object AppRegistry {
         ManagedApp("cookbook", "Cookbook", "com.cookbook", "CDRaab01/Cookbook"),
         ManagedApp("hawksnest", "Hawksnest", "com.hawksnest", "CDRaab01/Hawksnest"),
         ManagedApp("magpie", "Magpie", "com.magpie", "CDRaab01/Magpie"),
+        ManagedApp("remnant", "Remnant", "com.remnant", "CDRaab01/Remnant"),
         ManagedApp(SELF_KEY, "Dragonfly", "com.dragonfly", "CDRaab01/Dragonfly", isSelf = true),
     )
 
