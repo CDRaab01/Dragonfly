@@ -51,15 +51,15 @@ object ServiceRegistry {
         media("overseerr", "Overseerr", "https://overseerr.dragonflymedia.org"),
         media("agregarr", "Agregarr", "https://agregarr.dragonflymedia.org"),
 
-        // Home Assistant frontend on k3s (NodePort 30080) — tailnet-only. The exact
-        // tailnet-reachable URL is unconfirmed (k3s runs in WSL; exposure is still open in
-        // hawksnest-automation), so this degrades to "off-network" until verified on the phone —
-        // a neutral state, never a false outage.
+        // Home Assistant frontend (nginx pod, k3s NodePort 30080) — tailnet-only. Reached over the
+        // tailnet via Tailscale Serve :8443 → the Hawksnest nginx pod (host socat 8090 → NodePort
+        // 30080), NOT the raw :30080 (that only exists inside WSL, unreachable from the phone).
+        // Confirmed 2026-07-22 (OPERATIONS.md §1.2/§6). REACHABILITY probe: any non-gateway response = up.
         MonitoredService(
             key = "hawksnest",
             displayName = "Hawksnest",
             group = ServiceGroup.AUTOMATION,
-            baseUrl = "http://dragonfly.tail2ce561.ts.net:30080",
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8443",
             probe = ProbeType.REACHABILITY,
             reachability = Reachability.TAILNET_ONLY,
         ),
