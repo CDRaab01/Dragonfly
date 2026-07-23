@@ -32,12 +32,13 @@ object ServiceRegistry {
             overrideKey = "magpie",
         ),
         // Remnant: tailnet-only like Magpie (personal notes incl. a MEDICAL category), served on
-        // HTTPS :8443 because Magpie already owns 443 on the host (Remnant deploy/README.md).
+        // HTTPS :8445 — Magpie owns 443 and Hawksnest owns :8443 on the host, so Remnant took the
+        // next Serve port (moved off :8443 on 2026-07-22; see OPERATIONS.md §6 / Remnant deploy/README.md).
         MonitoredService(
             key = "remnant",
             displayName = "Remnant",
             group = ServiceGroup.SUITE,
-            baseUrl = "https://dragonfly.tail2ce561.ts.net:8443",
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8445",
             probe = ProbeType.SUITE,
             reachability = Reachability.TAILNET_ONLY,
             overrideKey = "remnant",
