@@ -43,9 +43,9 @@ services:
       # not in env_file (compose doesn't re-read a changed env_file on redeploy). Without this the
       # smoke credential could mint an aud="suite" token for any email. Must match each SSO-only
       # app's smoke subject (its scripts/synthetic_smoke.py default) or that app's deploy smoke
-      # fails. Space/comma-separated: magpie + remnant (both SSO-only, so both smoke via a suite
-      # token rather than a password account).
-      SMOKE_SUBJECT_EMAILS: ${SMOKE_SUBJECT_EMAILS:-magpie-smoke@dragonflymedia.org remnant-smoke@dragonflymedia.org}
+      # fails. Space/comma-separated: magpie + remnant + crate (all SSO-only, so all smoke via a
+      # suite token rather than a password account).
+      SMOKE_SUBJECT_EMAILS: ${SMOKE_SUBJECT_EMAILS:-magpie-smoke@dragonflymedia.org remnant-smoke@dragonflymedia.org crate-smoke@dragonflymedia.org}
     depends_on:
       db:
         condition: service_healthy
