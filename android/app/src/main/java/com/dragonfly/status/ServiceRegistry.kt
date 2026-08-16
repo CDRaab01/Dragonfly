@@ -43,6 +43,30 @@ object ServiceRegistry {
             reachability = Reachability.TAILNET_ONLY,
             overrideKey = "remnant",
         ),
+        // Crate: tailnet-only, Serve :8446. Live since 2026-08-14 and unmonitored until now —
+        // the dashboard's whole claim is "is my world green", and a backend it does not know
+        // about is a backend that can be down while the banner says all systems go.
+        MonitoredService(
+            key = "crate",
+            displayName = "Crate",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8446",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "crate",
+        ),
+        // Tote: tailnet-only for the same reason as Magpie — a complete household inventory of
+        // electronics, tools and vintage games is a burglar's shopping list. Serve :8448, taken
+        // after Crate's :8446 (:8447 is Frigate's admin UI).
+        MonitoredService(
+            key = "tote",
+            displayName = "Tote",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8448",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "tote",
+        ),
 
         media("plex", "Plex", "https://plex.dragonflymedia.org"),
         media("radarr", "Radarr", "https://radarr.dragonflymedia.org"),
