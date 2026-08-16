@@ -156,6 +156,12 @@ visibility) or version reads and launch intents silently fail.
 - [x] ~~Dashboard v2 candidates (out of v1 scope): live service status from the server stack
       (Plex, Cookbook server, etc.).~~ — **DONE 2026-07-04** (ROADMAP Tier 3 #1). Suite status
       dashboard shipped: `status/` package + `ui/status/`, banner on Home. See the v2 build log.
+- [x] ~~Watch the tailnet-only app backends~~ — **done 2026-08-16.** `ServiceRegistry` gained
+      **Tote** (`:8448`, deferred until its ts.net URL was real) and **Crate** (`:8446`), which had
+      been live and unmonitored since 2026-08-14. A backend the dashboard does not know about can
+      be down while the banner says all systems go, so `ServiceRegistryTest` now derives the
+      expected set from `AppRegistry` — adding an app without its backend fails at the moment the
+      omission is made rather than months later.
 - [x] ~~Confirm Hawksnest's tailnet-reachable status URL~~ — **done 2026-07-22.** The old registry
       guess (`http://…:30080`, the raw k3s NodePort) is unreachable over the tailnet; the real path is
       **Tailscale Serve `:8443` → the Hawksnest nginx pod** (host `socat 8090` → NodePort 30080).
