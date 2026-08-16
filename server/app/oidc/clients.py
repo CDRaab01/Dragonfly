@@ -23,6 +23,7 @@ CLIENTS: dict[str, Client] = {
     "magpie": Client("magpie", ("com.magpie:/oauth2redirect",)),
     "remnant": Client("remnant", ("com.remnant:/oauth2redirect",)),
     "crate": Client("crate", ("com.crate:/oauth2redirect",)),
+    "tote": Client("tote", ("com.tote:/oauth2redirect",)),
     # Local development + automated tests (loopback redirect, per RFC 8252).
     "localdev": Client("localdev", ("http://localhost:8100/callback", "http://127.0.0.1/callback")),
 }
