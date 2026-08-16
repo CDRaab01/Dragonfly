@@ -23,6 +23,7 @@ object AppRegistry {
         ManagedApp("magpie", "Magpie", "com.magpie", "CDRaab01/Magpie"),
         ManagedApp("remnant", "Remnant", "com.remnant", "CDRaab01/Remnant"),
         ManagedApp("crate", "Crate", "com.crate", "CDRaab01/Crate"),
+        ManagedApp("tote", "Tote", "com.tote", "CDRaab01/Tote"),
         ManagedApp(SELF_KEY, "Dragonfly", "com.dragonfly", "CDRaab01/Dragonfly", isSelf = true),
     )
 

@@ -188,6 +188,22 @@ async def test_remnant_client_registered_with_its_redirect_uri(client):
     assert "code" in q
 
 
+async def test_tote_client_registered_with_its_redirect_uri(client):
+    """Tote (SSO-only, like Magpie/Remnant/Crate) resolves and accepts its Android AppAuth
+    redirect scheme — the same registration shape as every sibling app."""
+    await _register_and_login(client, "tote-flow@example.com")
+    _, challenge = _pkce()
+    r = await client.get(
+        "/authorize",
+        params=_authorize_params(
+            challenge, client_id="tote", redirect_uri="com.tote:/oauth2redirect"
+        ),
+    )
+    assert r.status_code == 302
+    q = parse_qs(urlparse(r.headers["location"]).query)
+    assert "code" in q
+
+
 async def test_crate_client_registered_with_its_redirect_uri(client):
     """Crate (SSO-only, like Magpie/Remnant) resolves and accepts its Android AppAuth redirect
     scheme — the same registration shape as every sibling app."""
