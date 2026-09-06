@@ -37,7 +37,7 @@ class ServiceRegistryTest {
         // A tailnet-only service probed as PUBLIC reports "down" from any network that cannot
         // reach the tailnet — a false alarm that trains someone to ignore the dashboard. The
         // correct degradation is "off-network".
-        val tailnetOnly = setOf("magpie", "remnant", "crate", "tote", "hawksnest")
+        val tailnetOnly = setOf("magpie", "remnant", "crate", "tote", "fledgling", "hawksnest")
         services.filter { it.key in tailnetOnly }.forEach {
             assertEquals(
                 Reachability.TAILNET_ONLY,

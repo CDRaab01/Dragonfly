@@ -24,6 +24,7 @@
         <package android:name="com.remnant" />
         <package android:name="com.crate" />
         <package android:name="com.tote" />
+        <package android:name="com.fledgling" />
     </queries>
 
     <application

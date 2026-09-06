@@ -68,6 +68,19 @@ object ServiceRegistry {
             overrideKey = "tote",
         ),
 
+        // Fledgling: tailnet-only like the rest — it holds one child's whole learning record, and
+        // the kid endpoints are unauthenticated by design (the tailnet IS the access control, see
+        // its ARCHITECTURE.md). Serve :8451, the next port after Wren's :8450.
+        MonitoredService(
+            key = "fledgling",
+            displayName = "Fledgling",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8451",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "fledgling",
+        ),
+
         media("plex", "Plex", "https://plex.dragonflymedia.org"),
         media("radarr", "Radarr", "https://radarr.dragonflymedia.org"),
         media("sonarr", "Sonarr", "https://sonarr.dragonflymedia.org"),
