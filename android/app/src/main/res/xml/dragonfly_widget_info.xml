@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis is 0 on purpose. The widget only re-renders the last persisted probe
+     snapshot (no network, nothing date-dependent), and StatusRepository.refresh() already pushes a
+     redraw through WidgetRefresher whenever that snapshot changes. A periodic tick therefore drew
+     identical pixels while costing a device wake + cold process start + a Glance session wakelock
+     48x/day at the old 30-minute platform minimum. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_description"
     android:minWidth="180dp"
@@ -6,6 +11,6 @@
     android:targetCellWidth="3"
     android:targetCellHeight="3"
     android:resizeMode="horizontal|vertical"
-    android:updatePeriodMillis="1800000"
+    android:updatePeriodMillis="0"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:widgetCategory="home_screen" />
