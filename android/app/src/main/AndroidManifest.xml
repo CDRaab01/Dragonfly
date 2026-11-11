@@ -25,6 +25,7 @@
         <package android:name="com.crate" />
         <package android:name="com.tote" />
         <package android:name="com.fledgling" />
+        <package android:name="com.shoebox" />
     </queries>
 
     <application
