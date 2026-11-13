@@ -12,7 +12,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import retrofit2.HttpException
 
 /**
  * Resolves "what's the newest version of each app?" from the release server (GitHub Releases, or
@@ -64,7 +63,7 @@ class UpdateRepository @Inject constructor(
     private suspend fun fetchFromGitHub(repo: String): Result<LatestRelease> {
         val source = patStore.releaseSource
         val first = fetchRelease(repo, source)
-        return if (source != ReleaseSource.GitHub && first.isNotFound()) fetchRelease(repo, ReleaseSource.GitHub) else first
+        return if (source != ReleaseSource.GitHub && ReleaseSource.shouldFallBackToGitHub(first.exceptionOrNull())) fetchRelease(repo, ReleaseSource.GitHub) else first
     }
 
     private suspend fun fetchRelease(repo: String, source: ReleaseSource): Result<LatestRelease> = runCatching {
@@ -103,7 +102,7 @@ class UpdateRepository @Inject constructor(
             val source = patStore.releaseSource
             val releases = runCatching { releaseApis.api(source).releases(owner, name) }
                 .recoverCatching { e ->
-                    if (source != ReleaseSource.GitHub && (e as? HttpException)?.code() == 404) {
+                    if (source != ReleaseSource.GitHub && ReleaseSource.shouldFallBackToGitHub(e)) {
                         releaseApis.api(ReleaseSource.GitHub).releases(owner, name)
                     } else throw e
                 }.getOrThrow()
@@ -112,4 +111,3 @@ class UpdateRepository @Inject constructor(
     }
 }
 
-private fun Result<*>.isNotFound(): Boolean = (exceptionOrNull() as? HttpException)?.code() == 404
