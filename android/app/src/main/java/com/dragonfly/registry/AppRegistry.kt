@@ -25,6 +25,7 @@ object AppRegistry {
         ManagedApp("crate", "Crate", "com.crate", "CDRaab01/Crate"),
         ManagedApp("tote", "Tote", "com.tote", "CDRaab01/Tote"),
         ManagedApp("fledgling", "Fledgling", "com.fledgling", "CDRaab01/Fledgling"),
+        ManagedApp("shoebox", "Shoebox", "com.shoebox", "CDRaab01/Shoebox"),
         ManagedApp(SELF_KEY, "Dragonfly", "com.dragonfly", "CDRaab01/Dragonfly", isSelf = true),
     )
 

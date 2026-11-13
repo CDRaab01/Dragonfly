@@ -81,6 +81,20 @@ object ServiceRegistry {
             overrideKey = "fledgling",
         ),
 
+        // Shoebox: tailnet-only like Tote — it is a family photo archive of a child's work. Serve
+        // :8452, the next port after Fledgling's :8451 (checked against the live `tailscale serve
+        // status`, 2026-11-10). Not mapped on the host until Shoebox's first deploy, so the
+        // dashboard reads it as down until then: merge this after that deploy.
+        MonitoredService(
+            key = "shoebox",
+            displayName = "Shoebox",
+            group = ServiceGroup.SUITE,
+            baseUrl = "https://dragonfly.tail2ce561.ts.net:8452",
+            probe = ProbeType.SUITE,
+            reachability = Reachability.TAILNET_ONLY,
+            overrideKey = "shoebox",
+        ),
+
         media("plex", "Plex", "https://plex.dragonflymedia.org"),
         media("radarr", "Radarr", "https://radarr.dragonflymedia.org"),
         media("sonarr", "Sonarr", "https://sonarr.dragonflymedia.org"),
