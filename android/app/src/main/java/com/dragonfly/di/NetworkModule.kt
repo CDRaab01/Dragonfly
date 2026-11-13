@@ -1,6 +1,6 @@
 package com.dragonfly.di
 
-import com.dragonfly.net.GitHubApi
+import com.dragonfly.net.ReleaseSource
 import com.dragonfly.settings.PatStore
 import dagger.Module
 import dagger.Provides
@@ -9,21 +9,17 @@ import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
-import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
     /**
-     * One client for everything: GitHub API calls, version.json fetches, APK downloads. The auth
-     * interceptor attaches the PAT to github.com hosts only — it must never leak to asset-CDN
-     * redirects off GitHub.
+     * One client for everything: release API calls, version.json fetches, APK downloads. The auth
+     * interceptor attaches the token to the configured release host only (github.com, or the
+     * Forgejo root's host) — it must never leak to asset-CDN redirects or anywhere else.
      */
     @Provides
     @Singleton
@@ -52,24 +48,16 @@ object NetworkModule {
 
     private fun gitHubAuth(patStore: PatStore) = Interceptor { chain ->
         val request = chain.request()
-        val host = request.url.host
-        val pat = patStore.githubPat
-        if (pat != null && (host == "api.github.com" || host == "github.com")) {
-            chain.proceed(request.newBuilder().header("Authorization", "Bearer $pat").build())
+        val header = ReleaseSource.authHeaderFor(
+            url = request.url,
+            source = patStore.releaseSource,
+            githubPat = patStore.githubPat,
+            forgejoToken = patStore.forgejoToken,
+        )
+        if (header != null) {
+            chain.proceed(request.newBuilder().header("Authorization", header).build())
         } else {
             chain.proceed(request)
         }
-    }
-
-    @Provides
-    @Singleton
-    fun gitHubApi(client: OkHttpClient): GitHubApi {
-        val json = Json { ignoreUnknownKeys = true }
-        return Retrofit.Builder()
-            .baseUrl("https://api.github.com/")
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create(GitHubApi::class.java)
     }
 }

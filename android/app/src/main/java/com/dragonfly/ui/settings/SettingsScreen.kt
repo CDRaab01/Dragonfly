@@ -53,6 +53,8 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsState()
     val hasPat by viewModel.hasPat.collectAsState()
+    val releaseServerUrl by viewModel.releaseServerUrl.collectAsState()
+    val hasForgejoToken by viewModel.hasForgejoToken.collectAsState()
     val hasDigestKey by viewModel.hasDigestKey.collectAsState()
 
     Scaffold(
@@ -98,41 +100,50 @@ fun SettingsScreen(
             }
 
             item {
-                var pat by remember { mutableStateOf("") }
+                PanelCard(Modifier.fillMaxWidth()) {
+                    Column {
+                        SectionHeader("Release server")
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Your Forgejo, checked first for updates. Apps not moved there yet " +
+                                "still update from GitHub. Leave blank to use GitHub only.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        AppServerRow(
+                            displayName = "Forgejo",
+                            saved = releaseServerUrl,
+                            onSave = viewModel::setReleaseServerUrl,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        TokenField(
+                            label = "Forgejo access token",
+                            status = when {
+                                hasForgejoToken -> "Token stored (encrypted)"
+                                releaseServerUrl.isBlank() -> "No token"
+                                else -> "No token — Forgejo will refuse release checks"
+                            },
+                            hasToken = hasForgejoToken,
+                            onSave = viewModel::saveForgejoToken,
+                            onClear = viewModel::clearForgejoToken,
+                        )
+                    }
+                }
+            }
+
+            item {
                 PanelCard(Modifier.fillMaxWidth()) {
                     Column {
                         SectionHeader("GitHub token")
                         Spacer(Modifier.height(8.dp))
-                        Caption(if (hasPat) "Token stored (encrypted)" else "No token — public repos only")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pat,
-                            onValueChange = { pat = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Personal access token") },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
+                        TokenField(
+                            label = "Personal access token",
+                            status = if (hasPat) "Token stored (encrypted)" else "No token — public repos only",
+                            hasToken = hasPat,
+                            onSave = viewModel::savePat,
+                            onClear = viewModel::clearPat,
                         )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            PulseButton(
-                                text = "Save",
-                                onClick = {
-                                    viewModel.savePat(pat)
-                                    pat = ""
-                                },
-                                compact = true,
-                                enabled = pat.isNotBlank(),
-                            )
-                            if (hasPat) {
-                                PulseButton(
-                                    text = "Clear",
-                                    onClick = viewModel::clearPat,
-                                    compact = true,
-                                    tonal = true,
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -294,5 +305,42 @@ private fun AppServerRow(
     if (text != saved) {
         Spacer(Modifier.height(8.dp))
         PulseButton(text = "Save", onClick = { onSave(text) }, compact = true)
+    }
+}
+
+/** Write-only secret entry: the stored value is never shown, only whether one exists. */
+@Composable
+private fun TokenField(
+    label: String,
+    status: String,
+    hasToken: Boolean,
+    onSave: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    var value by remember { mutableStateOf("") }
+    Caption(status)
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = value,
+        onValueChange = { value = it },
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PulseButton(
+            text = "Save",
+            onClick = {
+                onSave(value)
+                value = ""
+            },
+            compact = true,
+            enabled = value.isNotBlank(),
+        )
+        if (hasToken) {
+            PulseButton(text = "Clear", onClick = onClear, compact = true, tonal = true)
+        }
     }
 }

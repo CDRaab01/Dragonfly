@@ -32,20 +32,25 @@ Standard **system installer prompt** via `PackageInstaller` — no silent instal
 - Route users to grant "Install unknown apps" for Dragonfly on first update (deep-link to `Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES`).
 - Each update = one system-driven confirmation tap. Acceptable for personal sideload; silent install would need device owner (factory reset) or root — explicitly out of scope.
 
-## Update source: GitHub Releases
+## Update source: Forgejo, then GitHub Releases
 
-The hub updates every app from **GitHub Releases** — the only source. (A configurable self-hosted
-manifest source was designed but never stood up; it was removed 2026-07-15 per the "no dead
-settings" 1.0 bar — "delete beats build". See ROADMAP "Road to 1.0" #2.)
+The hub updates every app from **release APIs** — GitHub Releases, or the self-hosted Forgejo once
+Settings → Release server is set (Nov 2026 migration off GitHub). Forgejo's release API is
+GitHub-shaped, so `GitHubApi` serves both (`ReleaseSource` picks the base URL). With Forgejo set,
+each repo is looked up there first and **falls back to GitHub on 404**, so repos move one at a time.
+Forgejo is reached at its tailnet HTTPS name (`https://dragonfly.tail2ce561.ts.net:8452/`, a Tailscale
+Serve proxy to the NAS) — the hub has no cleartext exemption, so the LAN `http://` URL can't work.
+Forgejo's `browser_download_url` uses its ROOT_URL (LAN IP), so asset URLs are re-homed onto the
+configured root. (The older manifest self-host source was removed 2026-07-15 — different thing.)
 
-- Poll `GET /repos/{owner}/{repo}/releases/latest` via GitHub REST API.
+- Poll `GET /repos/{owner}/{repo}/releases/latest` (GitHub REST, or Forgejo `/api/v1/`).
 - **Each sibling's release must include a `version.json` asset** (uploaded by its release CI) alongside the `.apk`:
 ```json
 { "versionCode": 42, "versionName": "1.4.2", "sha256": "…", "minSdk": 26 }
 ```
   This is required because the GitHub API only exposes the semver tag — `versionCode` (the actual source of truth) has to be published explicitly. Note this requirement in each sibling's CLAUDE.md / release workflow.
 - Parse `version.json` + the `.apk` asset URL; `tag_name` is display-only.
-- Optional PAT stored in DataStore for private repos / rate limits.
+- Optional GitHub PAT and Forgejo token (separate slots — fallback needs both), encrypted.
 - If a release lacks `version.json`, surface it as "unknown version — fix the release" rather than guessing from the tag.
 
 ## Version comparison
@@ -208,8 +213,10 @@ composite build.
 **Architecture (package `com.dragonfly`):**
 - `registry/` — `AppRegistry`, the five managed apps (see table above).
 - `settings/` — `SettingsRepository` (DataStore: global + per-app source, self-host URL,
-  interval, Wi-Fi-only) and `PatStore` (GitHub PAT in `EncryptedSharedPreferences`; sync reads
-  so the OkHttp interceptor can attach it — `api.github.com` hosts only, never the self-host).
+  interval, Wi-Fi-only) and `PatStore` (GitHub PAT, Forgejo token + Release server URL in
+  `EncryptedSharedPreferences`; sync reads so the OkHttp interceptor can attach them —
+  `ReleaseSource.authHeaderFor`: GitHub hosts get the PAT, the Forgejo root's exact host:port gets
+  the Forgejo token, nothing else gets either).
 - `net/` — Retrofit `GitHubApi` (releases/latest), `HttpFetcher` (arbitrary-URL GETs:
   manifest.json, version.json assets), `NetworkStatus` (unmetered check).
   With a PAT, asset downloads switch to the API asset endpoint + `Accept: octet-stream`
