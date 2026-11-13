@@ -20,7 +20,7 @@ class ReleaseSourceTest {
         val s = ReleaseSource.from("https://forgejo.example.ts.net") as ReleaseSource.Forgejo
         assertEquals("https://forgejo.example.ts.net/api/v1/", s.apiBaseUrl)
         val withPort = ReleaseSource.from("http://192.168.4.57:3000/") as ReleaseSource.Forgejo
-        assertEquals("http://192.168.4.57:3000/api/v1/", withPort.apiBaseUrl)
+        assertEquals("https://192.168.4.57:3000/api/v1/", withPort.apiBaseUrl)
     }
 
     @Test
@@ -58,5 +58,27 @@ class ReleaseSourceTest {
         // Forgejo token never goes anywhere when GitHub is the source.
         assertNull(h("https://dragonfly.example.ts.net:8452/x", ReleaseSource.GitHub))
         assertNull(h("https://objects.githubusercontent.com/asset"))
+    }
+
+    @Test
+    fun `root is always https`() {
+        fun root(u: String) = (ReleaseSource.from(u) as ReleaseSource.Forgejo).root.toString()
+        assertEquals("https://dragonfly.example.ts.net:8452/", root("http://dragonfly.example.ts.net:8452"))
+        assertEquals("https://dragonfly.example.ts.net:8452/", root("dragonfly.example.ts.net:8452"))
+        assertEquals("https://forgejo.example.org/", root("http://forgejo.example.org"))
+        assertEquals("https://forgejo.example.org/", root(" https://forgejo.example.org/ "))
+    }
+
+    @Test
+    fun `fallback on missing repo or unreachable server, not on a refused token`() {
+        fun http(code: Int) = retrofit2.HttpException(
+            retrofit2.Response.error<Any>(code, okhttp3.ResponseBody.Companion.create(null, "")),
+        )
+        assertTrue(ReleaseSource.shouldFallBackToGitHub(http(404)))
+        assertTrue(ReleaseSource.shouldFallBackToGitHub(java.net.UnknownServiceException("CLEARTEXT")))
+        assertTrue(ReleaseSource.shouldFallBackToGitHub(java.net.UnknownHostException("x")))
+        assertEquals(false, ReleaseSource.shouldFallBackToGitHub(http(401)))
+        assertEquals(false, ReleaseSource.shouldFallBackToGitHub(http(403)))
+        assertEquals(false, ReleaseSource.shouldFallBackToGitHub(null))
     }
 }

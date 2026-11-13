@@ -37,7 +37,9 @@ Standard **system installer prompt** via `PackageInstaller` — no silent instal
 The hub updates every app from **release APIs** — GitHub Releases, or the self-hosted Forgejo once
 Settings → Release server is set (Nov 2026 migration off GitHub). Forgejo's release API is
 GitHub-shaped, so `GitHubApi` serves both (`ReleaseSource` picks the base URL). With Forgejo set,
-each repo is looked up there first and **falls back to GitHub on 404**, so repos move one at a time.
+each repo is looked up there first and **falls back to GitHub on 404 or when Forgejo is unreachable**
+(not on 401/403 — a bad token must show), so repos move one at a time. The root is always forced
+to https (`http://` or a bare host is upgraded).
 Forgejo is reached at its tailnet HTTPS name (`https://dragonfly.tail2ce561.ts.net:8452/`, a Tailscale
 Serve proxy to the NAS) — the hub has no cleartext exemption, so the LAN `http://` URL can't work.
 Forgejo's `browser_download_url` uses its ROOT_URL (LAN IP), so asset URLs are re-homed onto the

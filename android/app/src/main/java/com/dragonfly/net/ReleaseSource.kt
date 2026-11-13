@@ -52,12 +52,32 @@ sealed interface ReleaseSource {
                 else -> null
             }
 
-        /** Blank or unparseable → GitHub (the setting is optional during the migration). */
+        /**
+         * Blank or unparseable → GitHub (the setting is optional during the migration).
+         * Always https: the app has no cleartext exemption, so an `http://` root (or one typed
+         * without a scheme) would fail every check with "CLEARTEXT … not permitted".
+         */
         fun from(forgejoUrl: String?): ReleaseSource {
             val trimmed = forgejoUrl?.trim().orEmpty()
             if (trimmed.isEmpty()) return GitHub
-            val withSlash = if (trimmed.endsWith("/")) trimmed else "$trimmed/"
-            return withSlash.toHttpUrlOrNull()?.let { Forgejo(it) } ?: GitHub
+            val withScheme = if ("://" in trimmed) trimmed else "https://$trimmed"
+            val withSlash = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
+            val url = withSlash.toHttpUrlOrNull() ?: return GitHub
+            if (url.scheme == "https") return Forgejo(url)
+            // http → https on the same host; keep an explicit port, drop the implicit :80.
+            val port = if (url.port == 80) 443 else url.port
+            return Forgejo(url.newBuilder().scheme("https").port(port).build())
+        }
+
+        /**
+         * Whether a failed Forgejo lookup should be retried on GitHub: the repo isn't there (404),
+         * or Forgejo can't be reached at all (off the tailnet, bad URL). A refused token (401/403)
+         * is not retried — that's a setting to fix, and GitHub would hide it.
+         */
+        fun shouldFallBackToGitHub(error: Throwable?): Boolean = when (error) {
+            is retrofit2.HttpException -> error.code() == 404
+            is java.io.IOException -> true
+            else -> false
         }
     }
 }
