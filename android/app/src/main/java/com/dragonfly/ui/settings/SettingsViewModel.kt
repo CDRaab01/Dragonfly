@@ -33,6 +33,10 @@ class SettingsViewModel @Inject constructor(
     private val _hasPat = MutableStateFlow(patStore.githubPat != null)
     val hasPat = _hasPat.asStateFlow()
 
+    /** Forgejo root that publishes releases; blank = GitHub. */
+    private val _releaseServerUrl = MutableStateFlow(patStore.releaseServerUrl.orEmpty())
+    val releaseServerUrl = _releaseServerUrl.asStateFlow()
+
     /** Whether a digest key is stored; the value itself is never echoed back to the UI. */
     private val _hasDigestKey = MutableStateFlow(digestKeyStore.digestKey != null)
     val hasDigestKey = _hasDigestKey.asStateFlow()
@@ -55,6 +59,24 @@ class SettingsViewModel @Inject constructor(
     fun savePat(pat: String) {
         patStore.githubPat = pat
         _hasPat.value = patStore.githubPat != null
+    }
+
+    fun setReleaseServerUrl(url: String) {
+        patStore.releaseServerUrl = url
+        _releaseServerUrl.value = patStore.releaseServerUrl.orEmpty()
+    }
+
+    private val _hasForgejoToken = MutableStateFlow(patStore.forgejoToken != null)
+    val hasForgejoToken = _hasForgejoToken.asStateFlow()
+
+    fun saveForgejoToken(token: String) {
+        patStore.forgejoToken = token
+        _hasForgejoToken.value = patStore.forgejoToken != null
+    }
+
+    fun clearForgejoToken() {
+        patStore.forgejoToken = null
+        _hasForgejoToken.value = false
     }
 
     fun clearPat() {

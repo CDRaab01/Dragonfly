@@ -56,8 +56,8 @@ staying auditable.
 | Package | Responsibility |
 |---|---|
 | `registry/` | `AppRegistry` — the six managed apps (key/package/repo), single source of truth. Every package here must also be in the manifest `<queries>` block or version reads silently fail |
-| `settings/` | DataStore settings (auto-check interval, Wi-Fi-only, per-app broker server URL, digest base URL) + `PatStore` (GitHub PAT) and `DigestKeyStore` (weekly-digest read key) — both EncryptedSharedPreferences (`secrets` file); the PAT attaches only to `api.github.com`, the digest key rides the `X-Digest-Key` header |
-| `net/` | Retrofit `GitHubApi`, `HttpFetcher` (version.json GETs), `NetworkStatus` |
+| `settings/` | DataStore settings (auto-check interval, Wi-Fi-only, per-app broker server URL, digest base URL) + `PatStore` (GitHub PAT, Forgejo token, Release server URL) and `DigestKeyStore` (weekly-digest read key) — both EncryptedSharedPreferences (`secrets` file); the PAT attaches only to GitHub hosts and the Forgejo token only to the Release server's host:port, the digest key rides the `X-Digest-Key` header |
+| `net/` | Retrofit `GitHubApi` (GitHub or Forgejo via `ReleaseSource` / `ReleaseApiProvider`), `HttpFetcher` (version.json GETs), `NetworkStatus` |
 | `digest/` | The weekly recap (client-only): `WeeklyDigest` DTOs (every field nullable — any domain null = that app was unreachable; narrative null = LM down), `DigestFormatter` (pure, unit-tested: headline strings, signed dollar formatting, week-range label, which-cards-show), `DigestRepository` (raw status-code-aware OkHttp GET `{digestBaseUrl}/digest/weekly` → `DigestResult` Success/NotYet(404)/NeedsKey(401)/Error). Fixed contract served by dragonfly-id |
 | `update/` | The update pipeline: `ReleaseResolver` (pure, unit-tested: parse `version.json`, pick assets, diff versionCodes), `UpdateRepository`, `UpdateFlowManager` (download → verify → install phases), `InstalledAppsDataSource` |
 | `install/` | `ApkDownloader` (OkHttp streaming; **SHA-256 gate deletes on mismatch — mandatory**), `ApkInstaller` (PackageInstaller session → system prompt), `InstallResultReceiver`/`InstallEventBus` |

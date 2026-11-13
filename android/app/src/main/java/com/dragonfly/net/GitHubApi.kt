@@ -36,14 +36,23 @@ interface GitHubApi {
         @Path("owner") owner: String,
         @Path("repo") repo: String,
         @Query("per_page") perPage: Int = 30,
+        // Forgejo's page-size parameter; GitHub ignores it.
+        @Query("limit") limit: Int = 30,
     ): List<GitHubRelease>
 }
 
 /**
- * Download URL for a release asset. Public repos serve `browser_download_url` directly; private
- * repos 404 there for unauthenticated CDN fetches, so when a PAT is configured we go through the
- * API asset endpoint with `Accept: application/octet-stream` instead (the auth interceptor adds
- * the token; GitHub answers with a redirect OkHttp follows).
+ * Download URL for a release asset.
+ * - GitHub, public repo: `browser_download_url` directly.
+ * - GitHub, private repo + PAT: unauthenticated CDN fetches 404, so go through the API asset
+ *   endpoint with `Accept: application/octet-stream` (the auth interceptor adds the token; GitHub
+ *   answers with a redirect OkHttp follows).
+ * - Forgejo: `browser_download_url` re-homed onto the configured root; Forgejo accepts the token
+ *   header on `/releases/download/` paths, so no API detour is needed.
  */
-fun GitHubAsset.downloadUrl(repo: String, usePat: Boolean): String =
-    if (usePat) "https://api.github.com/repos/$repo/releases/assets/$id" else browserDownloadUrl
+fun GitHubAsset.downloadUrl(repo: String, usePat: Boolean, source: ReleaseSource = ReleaseSource.GitHub): String =
+    when (source) {
+        is ReleaseSource.Forgejo -> source.rehome(browserDownloadUrl)
+        ReleaseSource.GitHub ->
+            if (usePat) "https://api.github.com/repos/$repo/releases/assets/$id" else browserDownloadUrl
+    }
